@@ -17,9 +17,23 @@ const app = express();
 
 //middleware 
 app.use(cors({
-  origin: "http://localhost:3000", // frontend URL
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type"]
+  origin: [
+    "http://localhost:3000", // Local development
+    "https://horoo.in", // Production domain
+    "https://www.horoo.in", // WWW version
+    "http://horoo.in", // HTTP version
+    "http://www.horoo.in" // HTTP WWW version
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type", 
+    "Authorization", 
+    "x-admin-username", 
+    "x-admin-password", 
+    "x-api-key", 
+    "x-admin-panel"
+  ],
+  credentials: true
 }));
 
 app.use(express.json({ limit: '50mb' }));
