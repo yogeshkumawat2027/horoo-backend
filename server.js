@@ -17,13 +17,25 @@ const app = express();
 
 //middleware 
 app.use(cors({
-  origin: [
-    "http://localhost:3000", // Local development
-    "https://horoo.in", // Production domain
-    "https://www.horoo.in", // WWW version
-    "http://horoo.in", // HTTP version
-    "http://www.horoo.in" // HTTP WWW version
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      "http://localhost:3000",
+      "https://horoo.in",
+      "https://www.horoo.in",
+      "http://horoo.in",
+      "http://www.horoo.in"
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('Blocked by CORS:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: [
     "Content-Type", 
@@ -33,11 +45,38 @@ app.use(cors({
     "x-api-key", 
     "x-admin-panel"
   ],
-  credentials: true
+  credentials: true,
+  optionsSuccessStatus: 200
 }));
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Handle preflight OPTIONS requests
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-admin-username, x-admin-password, x-api-key, x-admin-panel');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(200);
+});
+
+// Health check endpoint
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Horoo Backend API is running!',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'API Health Check Passed',
+    timestamp: new Date().toISOString()
+  });
+});
 
 app.use('/api', locationRoutes);
 app.use('/api', roomRoutes);
