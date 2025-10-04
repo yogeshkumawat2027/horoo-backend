@@ -11,7 +11,7 @@ const generateHorooId = async () => {
         const lastMess = await Mess.findOne({}, {}, { sort: { 'createdAt': -1 } });
         
         if (!lastMess || !lastMess.horooId) {
-            return "MES0001";
+            return "HMS0001";
         }
         
         // Extract number from last horooId (e.g., MES0001 -> 1)
@@ -21,7 +21,7 @@ const generateHorooId = async () => {
         // Format with leading zeros (e.g., 1 -> 0001)
         const formattedNumber = nextNumber.toString().padStart(4, '0');
         
-        return `MES${formattedNumber}`;
+        return `HMS${formattedNumber}`;
     } catch (error) {
         throw new Error("Error generating horooId");
     }

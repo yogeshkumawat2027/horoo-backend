@@ -11,7 +11,7 @@ const generateHorooId = async () => {
         const lastHostel = await Hostel.findOne({}, {}, { sort: { 'createdAt': -1 } });
         
         if (!lastHostel || !lastHostel.horooId) {
-            return "HST0001";
+            return "HHL0001";
         }
         
         // Extract number from last horooId (e.g., HST0001 -> 1)
@@ -21,7 +21,7 @@ const generateHorooId = async () => {
         // Format with leading zeros (e.g., 1 -> 0001)
         const formattedNumber = nextNumber.toString().padStart(4, '0');
         
-        return `HST${formattedNumber}`;
+        return `HHL${formattedNumber}`;
     } catch (error) {
         throw new Error("Error generating horooId");
     }

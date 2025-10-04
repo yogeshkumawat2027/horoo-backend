@@ -11,7 +11,7 @@ const generateHorooId = async () => {
         const lastCommercial = await Commercial.findOne({}, {}, { sort: { 'createdAt': -1 } });
         
         if (!lastCommercial || !lastCommercial.horooId) {
-            return "COM0001";
+            return "HCL0001";
         }
         
         // Extract number from last horooId (e.g., COM0001 -> 1)
@@ -21,7 +21,7 @@ const generateHorooId = async () => {
         // Format with leading zeros (e.g., 1 -> 0001)
         const formattedNumber = nextNumber.toString().padStart(4, '0');
         
-        return `COM${formattedNumber}`;
+        return `HCL${formattedNumber}`;
     } catch (error) {
         throw new Error("Error generating horooId");
     }

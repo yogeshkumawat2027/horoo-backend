@@ -11,7 +11,7 @@ const generateHorooId = async () => {
         const lastFlat = await Flat.findOne({}, {}, { sort: { 'createdAt': -1 } });
         
         if (!lastFlat || !lastFlat.horooId) {
-            return "FLT0001";
+            return "HFT0001";
         }
         
         // Extract number from last horooId (e.g., FLT0001 -> 1)
@@ -21,7 +21,7 @@ const generateHorooId = async () => {
         // Format with leading zeros (e.g., 1 -> 0001)
         const formattedNumber = nextNumber.toString().padStart(4, '0');
         
-        return `FLT${formattedNumber}`;
+        return `HFT${formattedNumber}`;
     } catch (error) {
         throw new Error("Error generating horooId");
     }
