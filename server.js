@@ -9,6 +9,7 @@ import hotelRoomRoutes from './routes/hotelRoomRoutes.js';
 import houseRoutes from './routes/houseRoutes.js';
 import messRoutes from './routes/messRoutes.js';
 import commercialRoutes from './routes/commercialRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -64,6 +65,7 @@ app.use('/api/hotelroom', hotelRoomRoutes);
 app.use('/api/houses', houseRoutes);
 app.use('/api/mess', messRoutes);
 app.use('/api/commercials', commercialRoutes);
+app.use('/api/auth', authRoutes);
 
 
 
