@@ -4,28 +4,28 @@ import MasterAdmin from '../models/MasterAdmin.js';
 const router = express.Router();
 
 // One-time endpoint to create master admin (remove this after use)
-router.post('/create-master-admin', async (req, res) => {
-  try {
-    const { name, username, password } = req.body;
+// router.post('/create-master-admin', async (req, res) => {
+//   try {
+//     const { name, username, password } = req.body;
     
-    // Check if master admin already exists
-    const existingAdmin = await MasterAdmin.findOne({ username });
-    if (existingAdmin) {
-      return res.status(400).json({ error: 'Master admin already exists' });
-    }
+//     // Check if master admin already exists
+//     const existingAdmin = await MasterAdmin.findOne({ username });
+//     if (existingAdmin) {
+//       return res.status(400).json({ error: 'Master admin already exists' });
+//     }
 
-    const masterAdmin = new MasterAdmin({
-      name,
-      username,
-      password // Note: In production, this should be hashed
-    });
+//     const masterAdmin = new MasterAdmin({
+//       name,
+//       username,
+//       password // Note: In production, this should be hashed
+//     });
 
-    await masterAdmin.save();
-    res.status(201).json({ message: 'Master admin created successfully' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+//     await masterAdmin.save();
+//     res.status(201).json({ message: 'Master admin created successfully' });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
 
 // Simple authentication endpoint
 router.post('/login', async (req, res) => {
