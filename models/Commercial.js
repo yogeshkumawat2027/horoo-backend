@@ -6,8 +6,8 @@ const commercialSchema = new mongoose.Schema(
     horooId: { type: String, unique: true },
     
     // Basic property details
-    propertyName: { type: String, required: true }, // Real name (not shown to users)
-    horooName: { type: String, required: true },   // Name shown on website
+    propertyName: { type: String }, // Real name (not shown to users)
+    horooName: { type: String},   // Name shown on website
     ownerName: { type: String, required: true },
     ownerMobile: { type: String, required: true },
     anotherNo: { type: String }, // optional

@@ -21,6 +21,7 @@ app.use(cors({
   origin: [
     "http://localhost:3000",
     "https://horoo.in",
+    "https://admin.horoo.in",
     "https://www.horoo.in",
     "http://horoo.in",
     "http://www.horoo.in"
