@@ -75,7 +75,7 @@ const addRoom = async (req, res) => {
         } = req.body;
 
         // Validation for required fields
-        if (!propertyName || !horooName || !ownerName || !ownerMobile || !state || !city || !area || !pincode || !ownerPrice || !horooPrice) {
+        if (!ownerName || !ownerMobile || !state || !city || !area || !pincode || !ownerPrice) {
             return res.status(400).json({
                 success: false,
                 message: "Required fields are missing"
@@ -148,8 +148,8 @@ const addRoom = async (req, res) => {
             horooId,
             
             // Basic property details
-            propertyName,
-            horooName,
+            propertyName: propertyName || `Room ${horooId}`,
+            horooName: horooName || propertyName || `Room ${horooId}`,
             ownerName,
             ownerMobile,
             anotherNo,
@@ -167,7 +167,7 @@ const addRoom = async (req, res) => {
             // Features
             facilities: facilities || [],
             ownerPrice: Number(ownerPrice),
-            horooPrice: Number(horooPrice),
+            horooPrice: Number(horooPrice || ownerPrice),
             offerType,
             pricePlans: pricePlans || [],
             

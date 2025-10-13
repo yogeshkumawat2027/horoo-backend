@@ -6,8 +6,8 @@ const roomSchema = new mongoose.Schema(
     horooId: { type: String, unique: true },
     
     // Basic property details
-    propertyName: { type: String, required: true }, // Real name (not shown to users)
-    horooName: { type: String, required: true },   // Name shown on website
+    propertyName: { type: String }, // Real name (not shown to users)
+    horooName: { type: String, },   // Name shown on website
     ownerName: { type: String, required: true },
     ownerMobile: { type: String, required: true },
     anotherNo: { type: String }, // optional
@@ -16,7 +16,7 @@ const roomSchema = new mongoose.Schema(
     state: { type: mongoose.Schema.Types.ObjectId, ref: "State", required: true },
     city: { type: mongoose.Schema.Types.ObjectId, ref: "City", required: true },
     area: { type: mongoose.Schema.Types.ObjectId, ref: "Area", required: true },
-    pincode: { type: String, required: true },
+    pincode: { type: String },
     nearbyAreas: [{ type: String }], // array of strings
     mapLink: { type: String },
     realAddress: { type: String },
@@ -25,7 +25,7 @@ const roomSchema = new mongoose.Schema(
     // Features
     facilities: [{ type: String }], // array of facilities
     ownerPrice: { type: Number, required: true },
-    horooPrice: { type: Number, required: true },
+    horooPrice: { type: Number },
     offerType: { type: String }, // e.g. discount, special, festival
     pricePlans: [
       {
