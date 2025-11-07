@@ -432,12 +432,12 @@ const getFilteredRoomsForUser = async (req, res) => {
       ];
     }
 
-    // Execute query and exclude sensitive fields
+    // Execute query and exclude sensitive fields (but keep both prices)
     const rooms = await Room.find(filter)
       .populate('state', 'name')
       .populate('city', 'name') 
       .populate('area', 'name')
-      .select('-ownerMobile -anotherNo -ownerName -ownerPrice -horooDescription -isVerified -isShow -realAddress')
+      .select('-ownerMobile -anotherNo -ownerName -horooDescription -isVerified -isShow -realAddress')
       .sort({ createdAt: -1 });
 
     const total = rooms.length;
