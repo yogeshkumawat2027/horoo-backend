@@ -267,7 +267,7 @@ const updateFlat = async(req,res)=>{
 const getFlatsForUser = async(req,res)=>{
     try {
     const flats = await Flat.find({ isShow: true }) // only valid flats
-      .select("horooId horooAddress area city state ownerPrice horooPrice mainImage availableFor roomType flatType") 
+      .select("horooId horooAddress horooName area city state ownerPrice horooPrice mainImage availableFor roomType flatType") 
       .populate("state", "name") 
       .populate("city", "name")  
       .populate("area", "name"); 
@@ -444,7 +444,7 @@ const getFilteredFlatsForUser = async (req, res) => {
       .populate('state', 'name')
       .populate('city', 'name') 
       .populate('area', 'name')
-      .select('-ownerMobile -anotherNo -ownerName -ownerPrice -horooDescription -isVerified -isShow -realAddress')
+      .select('-ownerMobile -anotherNo -ownerName -horooDescription -isVerified -isShow -realAddress')
       .sort({ createdAt: -1 });
 
     const total = flats.length;
