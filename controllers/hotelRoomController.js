@@ -280,7 +280,7 @@ const getHotelRoomsForUser = async(req,res)=>{
 const getHotelRoomDetailForUser = async(req,res)=>{
    try {
     const { id } = req.params;
-    const hotelRoom = await HotelRoom.findById(id)
+    const hotelRoom = await HotelRoomfindOne({ horooId: id })
       .select([
         "horooId",
         "horooName",

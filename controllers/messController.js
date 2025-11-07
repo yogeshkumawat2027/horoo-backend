@@ -274,7 +274,7 @@ const getMessForUser = async(req,res)=>{
 const getMessDetailForUser = async(req,res)=>{
    try {
     const { id } = req.params;
-    const mess = await Mess.findById(id)
+    const mess = await Mess.findOne({ horooId: id })
       .select([
         "horooId",
         "horooName",

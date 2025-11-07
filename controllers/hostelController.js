@@ -282,7 +282,7 @@ const getHostelsForUser = async(req,res)=>{
 const getHostelDetailForUser = async(req,res)=>{
    try {
     const { id } = req.params;
-    const hostel = await Hostel.findById(id)
+    const hostel = await Hostel.findOne({ horooId: id })
       .select([
         "horooId",
         "horooName",

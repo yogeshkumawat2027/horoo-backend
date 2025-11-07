@@ -282,7 +282,7 @@ const getFlatsForUser = async(req,res)=>{
 const getFlatDetailForUser = async(req,res)=>{
    try {
     const { id } = req.params;
-    const flat = await Flat.findById(id)
+    const flat = await Flat.findOne({ horooId: id })
       .select([
         "horooId",
         "horooName",

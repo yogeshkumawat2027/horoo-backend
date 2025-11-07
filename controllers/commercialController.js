@@ -280,7 +280,7 @@ const getCommercialsForUser = async(req,res)=>{
 const getCommercialDetailForUser = async(req,res)=>{
    try {
     const { id } = req.params;
-    const commercial = await Commercial.findById(id)
+    const commercial = await Commercial.findOne({ horooId: id })
       .select([
         "horooId",
         "horooName",

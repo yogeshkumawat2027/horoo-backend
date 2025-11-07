@@ -285,7 +285,7 @@ const getRoomsForUser = async(req,res)=>{
 const getRoomDeatilForUser = async(req,res)=>{
    try {
     const { id } = req.params;
-    const room = await Room.findById(id)
+    const room = await Room.findOne({ horooId: id })
       .select([
         "horooId",
         "horooName",

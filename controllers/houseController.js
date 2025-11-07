@@ -280,7 +280,7 @@ const getHousesForUser = async(req,res)=>{
 const getHouseDetailForUser = async(req,res)=>{
    try {
     const { id } = req.params;
-    const house = await House.findById(id)
+    const house = await House.findOne({ horooId: id })
       .select([
         "horooId",
         "horooName",
