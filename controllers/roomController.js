@@ -270,7 +270,7 @@ const updateRoom = async(req,res)=>{
 const getRoomsForUser = async(req,res)=>{
     try {
     const rooms = await Room.find({ isShow: true }) // only valid rooms
-      .select("horooId horooAddress area city state ownerPrice horooPrice mainImage availableFor roomType") 
+      .select("horooId horooName horooAddress area city state ownerPrice horooPrice mainImage availableFor roomType") 
       .populate("state", "name") 
       .populate("city", "name")  
       .populate("area", "name"); 
