@@ -36,7 +36,7 @@ const houseSchema = new mongoose.Schema(
     // Availability & Options
     availableFor: { type: [String], enum: ["Boys", "Girls", "Family"] },
     houseSize: { type: String }, // e.g. 10x12 ft
-    roomType: { type: [String], enum: ["Single", "Double", "Triple"] },
+    houseType: { type: [String], enum: ["1BHK", "2BHK", "3BHK"] },
     quantity: { type: Number, default: 1 },
     availability: { type: Boolean, default: true },
     isVerified: { type: Boolean, default: true },

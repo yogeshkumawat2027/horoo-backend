@@ -58,7 +58,7 @@ const addHouse = async (req, res) => {
             // Availability & Options
             availableFor,
             houseSize,
-            roomType,
+            houseType,
             quantity,
             availability,
             isVerified,
@@ -174,7 +174,7 @@ const addHouse = async (req, res) => {
             // Availability & Options
             availableFor: availableFor || [],
             houseSize,
-            roomType: roomType || [],
+            houseType: houseType || [],
             quantity: quantity || 1,
             availability: availability !== undefined ? availability : true,
             isVerified: isVerified !== undefined ? isVerified : true,
@@ -265,7 +265,7 @@ const updateHouse = async(req,res)=>{
 const getHousesForUser = async(req,res)=>{
     try {
     const houses = await House.find({ isShow: true }) // only valid houses
-      .select("horooId horooAddress area city state ownerPrice horooPrice mainImage availableFor roomType") 
+      .select("horooId horooName horooAddress area city state ownerPrice horooPrice mainImage availableFor houseType") 
       .populate("state", "name") 
       .populate("city", "name")  
       .populate("area", "name"); 
@@ -297,7 +297,7 @@ const getHouseDetailForUser = async(req,res)=>{
         "pricePlans",
         "availableFor",
         "houseSize",
-        "roomType",
+        "houseType",
         "availability",
         "isVerified",
         "mainImage",
@@ -327,7 +327,7 @@ const getFilteredHouses = async (req, res) => {
       state,
       city, 
       area,
-      roomType,
+      houseType,
       availableFor,
       availability,
       isVerified,
@@ -343,8 +343,8 @@ const getFilteredHouses = async (req, res) => {
     if (city) filter.city = city;
     if (area) filter.area = area;
 
-    // Room type filter
-    if (roomType) filter.roomType = { $in: [roomType] };
+    // House type filter
+    if (houseType) filter.houseType = { $in: [houseType] };
     
     // Available for filter
     if (availableFor) filter.availableFor = { $in: [availableFor] };
@@ -395,7 +395,7 @@ const getFilteredHousesForUser = async (req, res) => {
       state,
       city, 
       area,
-      roomType,
+      houseType,
       availableFor,
       search
     } = req.query;
@@ -411,8 +411,8 @@ const getFilteredHousesForUser = async (req, res) => {
     if (city) filter.city = city;
     if (area) filter.area = area;
 
-    // Room type filter
-    if (roomType) filter.roomType = { $in: [roomType] };
+    // House type filter
+    if (houseType) filter.houseType = { $in: [houseType] };
     
     // Available for filter
     if (availableFor) filter.availableFor = { $in: [availableFor] };
@@ -433,7 +433,7 @@ const getFilteredHousesForUser = async (req, res) => {
       .populate('state', 'name')
       .populate('city', 'name') 
       .populate('area', 'name')
-      .select('-ownerMobile -anotherNo -ownerName -ownerPrice -horooDescription -isVerified -isShow -realAddress')
+      .select('-ownerMobile -anotherNo -ownerName  -horooDescription -isVerified -isShow -realAddress')
       .sort({ createdAt: -1 });
 
     const total = houses.length;

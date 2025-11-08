@@ -265,7 +265,7 @@ const updateCommercial = async(req,res)=>{
 const getCommercialsForUser = async(req,res)=>{
     try {
     const commercials = await Commercial.find({ isShow: true }) // only valid commercial properties
-      .select("horooId horooAddress area city state ownerPrice horooPrice mainImage availableFor commercialType") 
+      .select("horooId horooAddress horooName area city state ownerPrice horooPrice mainImage availableFor commercialType") 
       .populate("state", "name") 
       .populate("city", "name")  
       .populate("area", "name"); 
@@ -433,7 +433,7 @@ const getFilteredCommercialsForUser = async (req, res) => {
       .populate('state', 'name')
       .populate('city', 'name') 
       .populate('area', 'name')
-      .select('-ownerMobile -anotherNo -ownerName -ownerPrice -horooDescription -isVerified -isShow -realAddress')
+      .select('-ownerMobile -anotherNo -ownerName  -horooDescription -isVerified -isShow -realAddress')
       .sort({ createdAt: -1 });
 
     const total = commercials.length;

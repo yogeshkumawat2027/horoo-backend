@@ -47,10 +47,10 @@ app.use('/api', locationRoutes);
 app.use('/api', roomRoutes);
 app.use('/api', flatRoutes);
 app.use('/api', hostelRoutes);
-app.use('/api/hotelroom', hotelRoomRoutes);
-app.use('/api/houses', houseRoutes);
-app.use('/api/mess', messRoutes);
-app.use('/api/commercials', commercialRoutes);
+app.use('/api', hotelRoomRoutes);
+app.use('/api', houseRoutes);
+app.use('/api', messRoutes);
+app.use('/api', commercialRoutes);
 app.use('/api/auth', authRoutes);
 
 
