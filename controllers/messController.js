@@ -236,6 +236,21 @@ const messForAdmin = async(req,res)=>{
     }
 }
 
+const messForAdminByHorooId = async(req,res)=>{
+    try{
+        const {horooId} = req.params;
+        const mess = await Mess.findOne({ horooId });
+
+        if(!mess){
+            return res.status(404).json({success:false, message : "Mess not found" })
+        }
+        res.status(200).json({success:true,message : "Mess fetched successfully" ,mess});
+    }
+    catch(err){
+        return res.status(500).json({success : false , error : err.message});
+    }
+}
+
 const updateMess = async(req,res)=>{
     try{
         const {id} = req.params;
@@ -434,4 +449,4 @@ const getFilteredMessForUser = async (req, res) => {
   }
 };
 
-export { addMess, getAllMess, messForAdmin, updateMess, getMessForUser, getMessDetailForUser, getFilteredMess, getFilteredMessForUser };
+export { addMess, getAllMess, messForAdmin, messForAdminByHorooId, updateMess, getMessForUser, getMessDetailForUser, getFilteredMess, getFilteredMessForUser };

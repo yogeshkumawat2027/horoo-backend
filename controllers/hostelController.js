@@ -244,6 +244,21 @@ const hostelForAdmin = async(req,res)=>{
     }
 }
 
+const hostelForAdminByHorooId = async(req,res)=>{
+    try{
+        const {horooId} = req.params;
+        const hostel = await Hostel.findOne({ horooId });
+
+        if(!hostel){
+            return res.status(404).json({success:false, message : "Hostel not found" })
+        }
+        res.status(200).json({success:true,message : "Hostel fetched successfully" ,hostel});
+    }
+    catch(err){
+        return res.status(500).json({success : false , error : err.message});
+    }
+}
+
 const updateHostel = async(req,res)=>{
     try{
         const {id} = req.params;
@@ -267,7 +282,7 @@ const updateHostel = async(req,res)=>{
 const getHostelsForUser = async(req,res)=>{
     try {
     const hostels = await Hostel.find({ isShow: true }) // only valid hostels
-      .select("horooId horooAddress area city state ownerPrice horooPrice mainImage availableFor roomType") 
+      .select("horooId horooName horooAddress  area city state ownerPrice horooPrice mainImage availableFor roomType") 
       .populate("state", "name") 
       .populate("city", "name")  
       .populate("area", "name"); 
@@ -436,7 +451,7 @@ const getFilteredHostelsForUser = async (req, res) => {
       .populate('state', 'name')
       .populate('city', 'name') 
       .populate('area', 'name')
-      .select('-ownerMobile -anotherNo -ownerName -ownerPrice -horooDescription -isVerified -isShow -realAddress')
+      .select('-ownerMobile -anotherNo -ownerName  -horooDescription -isVerified -isShow -realAddress')
       .sort({ createdAt: -1 });
 
     const total = hostels.length;
@@ -453,4 +468,4 @@ const getFilteredHostelsForUser = async (req, res) => {
   }
 };
 
-export { addHostel, getAllHostels,hostelForAdmin,updateHostel ,getHostelsForUser,getHostelDetailForUser,getFilteredHostels,getFilteredHostelsForUser};
+export { addHostel, getAllHostels,hostelForAdmin,hostelForAdminByHorooId,updateHostel ,getHostelsForUser,getHostelDetailForUser,getFilteredHostels,getFilteredHostelsForUser};

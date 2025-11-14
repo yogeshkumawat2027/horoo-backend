@@ -248,6 +248,25 @@ const roomForAdmin = async(req,res)=>{
         return res.status(500).json({success : false , error : err.message});
     }
 }
+
+const roomForAdminByHorooId = async(req,res)=>{
+    try{
+        const {horooId} = req.params;
+        const room = await Room.findOne({ horooId })
+            .populate('state', 'name')
+            .populate('city', 'name') 
+            .populate('area', 'name');
+
+        if(!room){
+            return res.status(404).json({success:false, message : "Room not found" })
+        }
+        res.status(200).json({success:true,message : "Room fetched successfully" ,room});
+    }
+    catch(err){
+        return res.status(500).json({success : false , error : err.message});
+    }
+}
+
 const updateRoom = async(req,res)=>{
     try{
         const {id} = req.params;
@@ -454,4 +473,4 @@ const getFilteredRoomsForUser = async (req, res) => {
   }
 };
 
-export { addRoom, getAllRooms,roomForAdmin,updateRoom ,getRoomsForUser,getRoomDeatilForUser,getFilteredRooms,getFilteredRoomsForUser};
+export { addRoom, getAllRooms,roomForAdmin,roomForAdminByHorooId,updateRoom ,getRoomsForUser,getRoomDeatilForUser,getFilteredRooms,getFilteredRoomsForUser};

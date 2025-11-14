@@ -242,6 +242,21 @@ const hotelRoomForAdmin = async(req,res)=>{
     }
 }
 
+const hotelRoomForAdminByHorooId = async(req,res)=>{
+    try{
+        const {horooId} = req.params;
+        const hotelRoom = await HotelRoom.findOne({ horooId });
+
+        if(!hotelRoom){
+            return res.status(404).json({success:false, message : "Hotel Room not found" })
+        }
+        res.status(200).json({success:true,message : "Hotel Room fetched successfully" ,hotelRoom});
+    }
+    catch(err){
+        return res.status(500).json({success : false , error : err.message});
+    }
+}
+
 const updateHotelRoom = async(req,res)=>{
     try{
         const {id} = req.params;
@@ -265,7 +280,7 @@ const updateHotelRoom = async(req,res)=>{
 const getHotelRoomsForUser = async(req,res)=>{
     try {
     const hotelRooms = await HotelRoom.find({ isShow: true }) // only valid hotel rooms
-      .select("horooId horooAddress area city state ownerPrice horooPrice mainImage availableFor roomType") 
+      .select("horooId horooName horooAddress area city state ownerPrice horooPrice mainImage availableFor roomType") 
       .populate("state", "name") 
       .populate("city", "name")  
       .populate("area", "name"); 
@@ -280,7 +295,7 @@ const getHotelRoomsForUser = async(req,res)=>{
 const getHotelRoomDetailForUser = async(req,res)=>{
    try {
     const { id } = req.params;
-    const hotelRoom = await HotelRoomfindOne({ horooId: id })
+    const hotelRoom = await HotelRoom.findOne({ horooId: id })
       .select([
         "horooId",
         "horooName",
@@ -433,7 +448,7 @@ const getFilteredHotelRoomsForUser = async (req, res) => {
       .populate('state', 'name')
       .populate('city', 'name') 
       .populate('area', 'name')
-      .select('-ownerMobile -anotherNo -ownerName -ownerPrice -horooDescription -isVerified -isShow -realAddress')
+      .select('-ownerMobile -anotherNo -ownerName  -horooDescription -isVerified -isShow -realAddress')
       .sort({ createdAt: -1 });
 
     const total = hotelRooms.length;
@@ -450,4 +465,4 @@ const getFilteredHotelRoomsForUser = async (req, res) => {
   }
 };
 
-export { addHotelRoom, getAllHotelRooms,hotelRoomForAdmin,updateHotelRoom ,getHotelRoomsForUser,getHotelRoomDetailForUser,getFilteredHotelRooms,getFilteredHotelRoomsForUser};
+export { addHotelRoom, getAllHotelRooms,hotelRoomForAdmin,hotelRoomForAdminByHorooId,updateHotelRoom ,getHotelRoomsForUser,getHotelRoomDetailForUser,getFilteredHotelRooms,getFilteredHotelRoomsForUser};

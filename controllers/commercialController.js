@@ -242,6 +242,21 @@ const commercialForAdmin = async(req,res)=>{
     }
 }
 
+const commercialForAdminByHorooId = async(req,res)=>{
+    try{
+        const {horooId} = req.params;
+        const commercial = await Commercial.findOne({ horooId });
+
+        if(!commercial){
+            return res.status(404).json({success:false, message : "Commercial Property not found" })
+        }
+        res.status(200).json({success:true,message : "Commercial Property fetched successfully" ,commercial});
+    }
+    catch(err){
+        return res.status(500).json({success : false , error : err.message});
+    }
+}
+
 const updateCommercial = async(req,res)=>{
     try{
         const {id} = req.params;
@@ -450,4 +465,4 @@ const getFilteredCommercialsForUser = async (req, res) => {
   }
 };
 
-export { addCommercial, getAllCommercials, commercialForAdmin, updateCommercial, getCommercialsForUser, getCommercialDetailForUser, getFilteredCommercials, getFilteredCommercialsForUser };
+export { addCommercial, getAllCommercials, commercialForAdmin, commercialForAdminByHorooId, updateCommercial, getCommercialsForUser, getCommercialDetailForUser, getFilteredCommercials, getFilteredCommercialsForUser };

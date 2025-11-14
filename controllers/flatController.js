@@ -244,6 +244,21 @@ const flatForAdmin = async(req,res)=>{
     }
 }
 
+const flatForAdminByHorooId = async(req,res)=>{
+    try{
+        const {horooId} = req.params;
+        const flat = await Flat.findOne({ horooId });
+
+        if(!flat){
+            return res.status(404).json({success:false, message : "Flat not found" })
+        }
+        res.status(200).json({success:true,message : "Flat fetched successfully" ,flat});
+    }
+    catch(err){
+        return res.status(500).json({success : false , error : err.message});
+    }
+}
+
 const updateFlat = async(req,res)=>{
     try{
         const {id} = req.params;
@@ -461,4 +476,4 @@ const getFilteredFlatsForUser = async (req, res) => {
   }
 };
 
-export { addFlat, getAllFlats,flatForAdmin,updateFlat ,getFlatsForUser,getFlatDetailForUser,getFilteredFlats,getFilteredFlatsForUser};
+export { addFlat, getAllFlats,flatForAdmin,flatForAdminByHorooId,updateFlat ,getFlatsForUser,getFlatDetailForUser,getFilteredFlats,getFilteredFlatsForUser};

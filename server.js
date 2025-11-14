@@ -10,6 +10,7 @@ import houseRoutes from './routes/houseRoutes.js';
 import messRoutes from './routes/messRoutes.js';
 import commercialRoutes from './routes/commercialRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import requestRoutes from "./routes/requestRoutes.js";
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -20,6 +21,7 @@ const app = express();
 app.use(cors({
   origin: [
     "http://localhost:3000",
+    "http://localhost:3001",
     "https://horoo.in",
     "https://admin.horoo.in",
     "https://www.horoo.in",
@@ -52,6 +54,7 @@ app.use('/api', houseRoutes);
 app.use('/api', messRoutes);
 app.use('/api', commercialRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/requests',requestRoutes);
 
 
 

@@ -242,6 +242,21 @@ const houseForAdmin = async(req,res)=>{
     }
 }
 
+const houseForAdminByHorooId = async(req,res)=>{
+    try{
+        const {horooId} = req.params;
+        const house = await House.findOne({ horooId });
+
+        if(!house){
+            return res.status(404).json({success:false, message : "House not found" })
+        }
+        res.status(200).json({success:true,message : "House fetched successfully" ,house});
+    }
+    catch(err){
+        return res.status(500).json({success : false , error : err.message});
+    }
+}
+
 const updateHouse = async(req,res)=>{
     try{
         const {id} = req.params;
@@ -450,4 +465,4 @@ const getFilteredHousesForUser = async (req, res) => {
   }
 };
 
-export { addHouse, getAllHouses, houseForAdmin, updateHouse, getHousesForUser, getHouseDetailForUser, getFilteredHouses, getFilteredHousesForUser };
+export { addHouse, getAllHouses, houseForAdmin, houseForAdminByHorooId, updateHouse, getHousesForUser, getHouseDetailForUser, getFilteredHouses, getFilteredHousesForUser };
