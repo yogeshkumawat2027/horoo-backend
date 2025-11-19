@@ -68,8 +68,8 @@ mongoose.connect(process.env.MONGODB_URI)
 })
 .catch((err)=> console.log(err));
 
-export default app;
+// export default app;
 
-// app.listen(PORT,()=>{
-//     console.log("Server is running at port 5000");
-// })
+app.listen(PORT,()=>{
+    console.log("Server is running at port 5000");
+})
