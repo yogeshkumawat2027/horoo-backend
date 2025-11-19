@@ -11,6 +11,7 @@ import messRoutes from './routes/messRoutes.js';
 import commercialRoutes from './routes/commercialRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import requestRoutes from "./routes/requestRoutes.js";
+import listingRequestRoutes from "./routes/listingRequestRoutes.js";
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -55,6 +56,7 @@ app.use('/api', messRoutes);
 app.use('/api', commercialRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/requests',requestRoutes);
+app.use('/api/listing-requests',listingRequestRoutes);
 
 
 
@@ -66,6 +68,8 @@ mongoose.connect(process.env.MONGODB_URI)
 })
 .catch((err)=> console.log(err));
 
-app.listen(PORT,()=>{
-    console.log("Server is running at port 5000");
-})
+export default app;
+
+// app.listen(PORT,()=>{
+//     console.log("Server is running at port 5000");
+// })
