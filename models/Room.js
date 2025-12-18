@@ -56,11 +56,6 @@ const roomSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Add indexes for faster queries
-roomSchema.index({ isShow: 1, createdAt: -1 });
-roomSchema.index({ state: 1, city: 1, area: 1 });
-roomSchema.index({ roomType: 1 });
-roomSchema.index({ availableFor: 1 });
-roomSchema.index({ horooId: 1 });
+
 
 export default mongoose.model("Room", roomSchema);

@@ -10,11 +10,11 @@ router.get('/rooms', getAllRooms);
 router.get('/room-for-admin/horoo/:horooId',roomForAdminByHorooId);  //show detail rooms for admin by horooId
 router.get('/room-for-admin/:id',roomForAdmin);  //show detail rooms  for admin
 router.put('/room/edit/:id',updateRoom);
-
 router.get("/rooms-for-user",getRoomsForUser);
 router.get('/rooms/filter', getFilteredRooms); // Filter rooms with multiple criteria - Admin
 router.get('/rooms/filter-for-user', getFilteredRoomsForUser); // Filter rooms for users - Public
 router.get("/room/:id",getRoomDeatilForUser); //show details of rooms to user
+
 
 
 export default router;

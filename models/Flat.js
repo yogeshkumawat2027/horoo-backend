@@ -52,12 +52,7 @@ const flatSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Add indexes for faster queries
-flatSchema.index({ isShow: 1, createdAt: -1 });
-flatSchema.index({ state: 1, city: 1, area: 1 });
-flatSchema.index({ flatType: 1 });
-flatSchema.index({ availableFor: 1 });
-flatSchema.index({ horooId: 1 });
+
 
 export default mongoose.model("Flat", flatSchema);
 

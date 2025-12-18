@@ -3,6 +3,7 @@ import State from '../models/State.js';
 import City from '../models/City.js';
 import Area from '../models/Area.js';
 import { uploadBase64ToCloudinary } from '../config/cloudinaryConfig.js';
+import redis from '../config/redis.js';
 
 // Generate unique Horoo ID
 const generateHorooId = async () => {
@@ -288,13 +289,26 @@ const updateRoom = async(req,res)=>{
 }
 const getRoomsForUser = async(req,res)=>{
     try {
-    const rooms = await Room.find({ isShow: true }) // only valid rooms
+    const cacheKey = 'all_rooms_user';
+    
+    // Check Redis first
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return res.status(200).json({ success: true, rooms: cached, source: 'cache' });
+    }
+
+    // Fetch from DB
+    const rooms = await Room.find({ isShow: true })
       .select("horooId horooName horooAddress area city state ownerPrice horooPrice mainImage availableFor roomType") 
       .populate("state", "name") 
       .populate("city", "name")  
-      .populate("area", "name"); 
+      .populate("area", "name")
+      .lean(); // Convert to plain objects
 
-    res.status(200).json({ success: true, rooms });
+    // Store in Redis for 10 minutes
+    await redis.set(cacheKey, rooms, { ex: 600 });
+
+    res.status(200).json({ success: true, rooms, source: 'database' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Server error" });
@@ -304,6 +318,15 @@ const getRoomsForUser = async(req,res)=>{
 const getRoomDeatilForUser = async(req,res)=>{
    try {
     const { id } = req.params;
+    const cacheKey = `room_detail:${id}`;
+    
+    // Check Redis first
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return res.status(200).json({ success: true, room: cached, source: 'cache' });
+    }
+
+    // Fetch from DB
     const room = await Room.findOne({ horooId: id })
       .select([
         "horooId",
@@ -331,13 +354,17 @@ const getRoomDeatilForUser = async(req,res)=>{
       ])
       .populate("state", "name") 
       .populate("city", "name")
-      .populate("area", "name");
+      .populate("area", "name")
+      .lean();
 
     if (!room) {
       return res.status(404).json({ success: false, message: "Room not found" });
     }
 
-    res.json({ success: true, room });
+    // Store in Redis for 15 minutes
+    await redis.set(cacheKey, room, { ex: 900 });
+
+    res.json({ success: true, room, source: 'database' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Server Error" });
@@ -424,6 +451,20 @@ const getFilteredRoomsForUser = async (req, res) => {
       search
     } = req.query;
 
+    // Create unique cache key based on filters
+    const cacheKey = `filtered:${state||'x'}:${city||'x'}:${area||'x'}:${roomType||'x'}:${availableFor||'x'}:${search||'x'}`;
+    
+    // Check Redis first
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return res.status(200).json({
+        success: true,
+        rooms: cached,
+        total: cached.length,
+        source: 'cache'
+      });
+    }
+
     // Build filter object with user restrictions
     let filter = {
       isShow: true        // Only show rooms marked to display (main requirement)
@@ -457,14 +498,19 @@ const getFilteredRoomsForUser = async (req, res) => {
       .populate('city', 'name') 
       .populate('area', 'name')
       .select('-ownerMobile -anotherNo -ownerName -horooDescription -isVerified -isShow -realAddress')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     const total = rooms.length;
+
+    // Store in Redis for 5 minutes (shorter for filtered results)
+    await redis.set(cacheKey, rooms, { ex: 300 });
 
     res.status(200).json({
       success: true,
       rooms,
-      total
+      total,
+      source: 'database'
     });
 
   } catch (error) {
