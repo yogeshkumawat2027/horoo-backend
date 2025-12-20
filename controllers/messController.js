@@ -36,6 +36,7 @@ const addMess = async (req, res) => {
             horooName,
             ownerName,
             ownerMobile,
+            ownerWhatsapp,
             anotherNo,
             
             // Location
@@ -45,6 +46,8 @@ const addMess = async (req, res) => {
             pincode,
             nearbyAreas,
             mapLink,
+            latitude,
+            longitude,
             realAddress,
             horooAddress,
             
@@ -52,6 +55,7 @@ const addMess = async (req, res) => {
             facilities,
             ownerPrice,
             horooPrice,
+            priceSuffix,
             offerType,
             pricePlans,
             
@@ -149,6 +153,7 @@ const addMess = async (req, res) => {
             horooName,
             ownerName,
             ownerMobile,
+            ownerWhatsapp,
             anotherNo,
             
             // Location
@@ -158,6 +163,8 @@ const addMess = async (req, res) => {
             pincode,
             nearbyAreas: nearbyAreas || [],
             mapLink,
+            latitude: latitude ? Number(latitude) : undefined,
+            longitude: longitude ? Number(longitude) : undefined,
             realAddress,
             horooAddress,
             
@@ -165,6 +172,7 @@ const addMess = async (req, res) => {
             facilities: facilities || [],
             ownerPrice: Number(ownerPrice),
             horooPrice: Number(horooPrice),
+            priceSuffix,
             offerType,
             pricePlans: pricePlans || [],
             
@@ -274,7 +282,7 @@ const updateMess = async(req,res)=>{
 const getMessForUser = async(req,res)=>{
     try {
     const mess = await Mess.find({ isShow: true }) // only valid mess
-      .select("horooId horooAddress area city state ownerPrice horooPrice mainImage availableFor") 
+      .select("horooId horooAddress area city state ownerPrice horooPrice mainImage availableFor priceSuffix ownerWhatsapp latitude longitude averageRating totalRatings") 
       .populate("state", "name") 
       .populate("city", "name")  
       .populate("area", "name"); 

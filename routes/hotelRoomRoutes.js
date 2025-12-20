@@ -1,5 +1,5 @@
 import express from 'express';
-import { addHotelRoom, getAllHotelRooms, hotelRoomForAdmin, hotelRoomForAdminByHorooId, updateHotelRoom, getHotelRoomsForUser, getHotelRoomDetailForUser, getFilteredHotelRooms, getFilteredHotelRoomsForUser } from '../controllers/hotelRoomController.js';
+import { addHotelRoom, getAllHotelRooms, hotelRoomForAdmin, hotelRoomForAdminByHorooId, updateHotelRoom, getHotelRoomsForUser, getHotelRoomDetailForUser, getFilteredHotelRooms, getFilteredHotelRoomsForUser, generateSlugsForExistingHotelRooms } from '../controllers/hotelRoomController.js';
 
 const router = express.Router();
 
@@ -14,6 +14,9 @@ router.get('/hotel/filter', getFilteredHotelRooms);
 // User routes
 router.get('/hotel-for-user', getHotelRoomsForUser);
 router.get('/hotel/filter-for-user', getFilteredHotelRoomsForUser);
-router.get('/hotel/:id', getHotelRoomDetailForUser);
+router.get('/hotel/:slug', getHotelRoomDetailForUser);
+
+// Migration route
+router.post('/hotel/generate-slugs', generateSlugsForExistingHotelRooms);
 
 export default router;

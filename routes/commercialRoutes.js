@@ -1,5 +1,5 @@
 import express from 'express';
-import { addCommercial, getAllCommercials, commercialForAdmin, commercialForAdminByHorooId, updateCommercial, getCommercialsForUser, getCommercialDetailForUser, getFilteredCommercials, getFilteredCommercialsForUser } from '../controllers/commercialController.js';
+import { addCommercial, getAllCommercials, commercialForAdmin, commercialForAdminByHorooId, updateCommercial, getCommercialsForUser, getCommercialDetailForUser, getFilteredCommercials, getFilteredCommercialsForUser, generateSlugsForExistingCommercials } from '../controllers/commercialController.js';
 
 const router = express.Router();
 
@@ -14,6 +14,9 @@ router.get('/commercial/filter', getFilteredCommercials);
 // User routes
 router.get('/commercial-for-user', getCommercialsForUser);
 router.get('/commercial/filter-for-user', getFilteredCommercialsForUser);
-router.get('/commercial/:id', getCommercialDetailForUser);
+router.get('/commercial/:slug', getCommercialDetailForUser);
+
+// Migration route
+router.post('/commercial/generate-slugs', generateSlugsForExistingCommercials);
 
 export default router;

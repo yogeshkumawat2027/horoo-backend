@@ -4,6 +4,31 @@ import City from '../models/City.js';
 import Area from '../models/Area.js';
 import { uploadBase64ToCloudinary } from '../config/cloudinaryConfig.js';
 
+// Function to generate slug from hotel room name
+const generateSlug = (name) => {
+    return name
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '') // Remove special characters
+        .replace(/\s+/g, '-')      // Replace spaces with hyphens
+        .replace(/-+/g, '-');      // Replace multiple hyphens with single hyphen
+};
+
+// Function to ensure unique slug
+const generateUniqueSlug = async (name) => {
+    let slug = generateSlug(name);
+    let slugExists = await HotelRoom.findOne({ slug });
+    let counter = 1;
+
+    while (slugExists) {
+        slug = `${generateSlug(name)}-${counter}`;
+        slugExists = await HotelRoom.findOne({ slug });
+        counter++;
+    }
+
+    return slug;
+};
+
 // Generate unique Horoo ID for hotel rooms
 const generateHorooId = async () => {
     try {
@@ -36,6 +61,7 @@ const addHotelRoom = async (req, res) => {
             horooName,
             ownerName,
             ownerMobile,
+            ownerWhatsapp,
             anotherNo,
             
             // Location
@@ -45,6 +71,8 @@ const addHotelRoom = async (req, res) => {
             pincode,
             nearbyAreas,
             mapLink,
+            latitude,
+            longitude,
             realAddress,
             horooAddress,
             
@@ -52,6 +80,7 @@ const addHotelRoom = async (req, res) => {
             facilities,
             ownerPrice,
             horooPrice,
+            priceSuffix,
             offerType,
             pricePlans,
             
@@ -110,6 +139,9 @@ const addHotelRoom = async (req, res) => {
         // Generate unique Horoo ID
         const horooId = await generateHorooId();
 
+        // Generate unique slug
+        const slug = await generateUniqueSlug(horooName);
+
         // Upload main image to Cloudinary if provided
         let mainImageUrl = null;
         if (mainImage) {
@@ -146,12 +178,14 @@ const addHotelRoom = async (req, res) => {
         // Create new hotel room
         const newHotelRoom = new HotelRoom({
             horooId,
+            slug,
             
             // Basic property details
             propertyName,
             horooName,
             ownerName,
             ownerMobile,
+            ownerWhatsapp,
             anotherNo,
             
             // Location
@@ -161,6 +195,8 @@ const addHotelRoom = async (req, res) => {
             pincode,
             nearbyAreas: nearbyAreas || [],
             mapLink,
+            latitude: latitude ? Number(latitude) : undefined,
+            longitude: longitude ? Number(longitude) : undefined,
             realAddress,
             horooAddress,
             
@@ -168,6 +204,7 @@ const addHotelRoom = async (req, res) => {
             facilities: facilities || [],
             ownerPrice: Number(ownerPrice),
             horooPrice: Number(horooPrice),
+            priceSuffix,
             offerType,
             pricePlans: pricePlans || [],
             
@@ -280,7 +317,7 @@ const updateHotelRoom = async(req,res)=>{
 const getHotelRoomsForUser = async(req,res)=>{
     try {
     const hotelRooms = await HotelRoom.find({ isShow: true }) // only valid hotel rooms
-      .select("horooId horooName horooAddress area city state ownerPrice horooPrice mainImage availableFor roomType") 
+      .select("horooId slug horooName horooAddress area city state ownerPrice horooPrice priceSuffix mainImage availableFor roomType averageRating totalRatings ownerWhatsapp latitude longitude") 
       .populate("state", "name") 
       .populate("city", "name")  
       .populate("area", "name"); 
@@ -294,10 +331,14 @@ const getHotelRoomsForUser = async(req,res)=>{
 
 const getHotelRoomDetailForUser = async(req,res)=>{
    try {
-    const { id } = req.params;
-    const hotelRoom = await HotelRoom.findOne({ horooId: id })
+    const { slug } = req.params;
+    
+    // Try to find by slug first, fallback to horooId
+    let hotelRoom = await HotelRoom.findOne({ slug: slug })
       .select([
+        "_id",
         "horooId",
+        "slug",
         "horooName",
         "state",
         "city",
@@ -319,13 +360,67 @@ const getHotelRoomDetailForUser = async(req,res)=>{
         "otherImages",
         "youtubeLink",
         "description",
+        "averageRating",
+        "totalRatings",
+        "reviews",
       ])
       .populate("state", "name") 
       .populate("city", "name")
       .populate("area", "name");
 
+    // If not found by slug, try finding by horooId (backward compatibility)
+    if (!hotelRoom) {
+      hotelRoom = await HotelRoom.findOne({ horooId: slug })
+        .select([
+          "_id",
+          "horooId",
+          "slug",
+          "horooName",
+          "state",
+          "city",
+          "area",
+          "pincode",
+          "nearbyAreas",
+          "mapLink",
+          "horooAddress",
+          "facilities",
+          "ownerPrice",
+          "horooPrice",
+          "pricePlans",
+          "availableFor",
+          "roomSize",
+          "roomType",
+          "availability",
+          "isVerified",
+          "mainImage",
+          "otherImages",
+          "youtubeLink",
+          "description",
+          "averageRating",
+          "totalRatings",
+          "reviews",
+        ])
+        .populate("state", "name") 
+        .populate("city", "name")
+        .populate("area", "name");
+    }
+
     if (!hotelRoom) {
       return res.status(404).json({ success: false, message: "Hotel Room not found" });
+    }
+
+    // Populate reviews separately with error handling
+    if (hotelRoom && hotelRoom.reviews && hotelRoom.reviews.length > 0) {
+      try {
+        await hotelRoom.populate({
+          path: "reviews",
+          match: { isActive: true, isApproved: true },
+          populate: { path: "user", select: "name profilePicture" },
+          options: { sort: { createdAt: -1 } }
+        });
+      } catch (reviewError) {
+        console.error('Error populating reviews:', reviewError);
+      }
     }
 
     res.json({ success: true, hotelRoom });
@@ -465,4 +560,41 @@ const getFilteredHotelRoomsForUser = async (req, res) => {
   }
 };
 
-export { addHotelRoom, getAllHotelRooms,hotelRoomForAdmin,hotelRoomForAdminByHorooId,updateHotelRoom ,getHotelRoomsForUser,getHotelRoomDetailForUser,getFilteredHotelRooms,getFilteredHotelRoomsForUser};
+// Migration function to generate slugs for existing hotel rooms
+const generateSlugsForExistingHotelRooms = async (req, res) => {
+    try {
+        const hotelRooms = await HotelRoom.find({ slug: { $exists: false } });
+        
+        if (hotelRooms.length === 0) {
+            return res.status(200).json({
+                success: true,
+                message: "All hotel rooms already have slugs",
+                updated: 0
+            });
+        }
+
+        let updatedCount = 0;
+        
+        for (const hotelRoom of hotelRooms) {
+            const slug = await generateUniqueSlug(hotelRoom.horooName);
+            hotelRoom.slug = slug;
+            await hotelRoom.save();
+            updatedCount++;
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Successfully generated slugs for ${updatedCount} hotel rooms`,
+            updated: updatedCount
+        });
+    } catch (error) {
+        console.error("Error generating slugs:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error generating slugs for existing hotel rooms",
+            error: error.message
+        });
+    }
+};
+
+export { addHotelRoom, getAllHotelRooms,hotelRoomForAdmin,hotelRoomForAdminByHorooId,updateHotelRoom ,getHotelRoomsForUser,getHotelRoomDetailForUser,getFilteredHotelRooms,getFilteredHotelRoomsForUser,generateSlugsForExistingHotelRooms};

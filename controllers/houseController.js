@@ -4,6 +4,31 @@ import City from '../models/City.js';
 import Area from '../models/Area.js';
 import { uploadBase64ToCloudinary } from '../config/cloudinaryConfig.js';
 
+// Slug generation functions
+const generateSlug = (text) => {
+    return text
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '-')        // Replace spaces with -
+        .replace(/[^\w\-]+/g, '')   // Remove all non-word chars
+        .replace(/\-\-+/g, '-')      // Replace multiple - with single -
+        .replace(/^-+/, '')          // Trim - from start of text
+        .replace(/-+$/, '');         // Trim - from end of text
+};
+
+const generateUniqueSlug = async (baseSlug) => {
+    let slug = baseSlug;
+    let counter = 1;
+    
+    while (await House.findOne({ slug })) {
+        slug = `${baseSlug}-${counter}`;
+        counter++;
+    }
+    
+    return slug;
+};
+
 // Generate unique Horoo ID for houses
 const generateHorooId = async () => {
     try {
@@ -36,6 +61,7 @@ const addHouse = async (req, res) => {
             horooName,
             ownerName,
             ownerMobile,
+            ownerWhatsapp,
             anotherNo,
             
             // Location
@@ -45,6 +71,8 @@ const addHouse = async (req, res) => {
             pincode,
             nearbyAreas,
             mapLink,
+            latitude,
+            longitude,
             realAddress,
             horooAddress,
             
@@ -52,6 +80,7 @@ const addHouse = async (req, res) => {
             facilities,
             ownerPrice,
             horooPrice,
+            priceSuffix,
             offerType,
             pricePlans,
             
@@ -110,6 +139,10 @@ const addHouse = async (req, res) => {
         // Generate unique Horoo ID
         const horooId = await generateHorooId();
 
+        // Generate unique slug
+        const baseSlug = generateSlug(horooName);
+        const slug = await generateUniqueSlug(baseSlug);
+
         // Upload main image to Cloudinary if provided
         let mainImageUrl = null;
         if (mainImage) {
@@ -146,12 +179,14 @@ const addHouse = async (req, res) => {
         // Create new house
         const newHouse = new House({
             horooId,
+            slug,
             
             // Basic property details
             propertyName,
             horooName,
             ownerName,
             ownerMobile,
+            ownerWhatsapp,
             anotherNo,
             
             // Location
@@ -161,6 +196,8 @@ const addHouse = async (req, res) => {
             pincode,
             nearbyAreas: nearbyAreas || [],
             mapLink,
+            latitude: latitude ? Number(latitude) : undefined,
+            longitude: longitude ? Number(longitude) : undefined,
             realAddress,
             horooAddress,
             
@@ -168,6 +205,7 @@ const addHouse = async (req, res) => {
             facilities: facilities || [],
             ownerPrice: Number(ownerPrice),
             horooPrice: Number(horooPrice),
+            priceSuffix,
             offerType,
             pricePlans: pricePlans || [],
             
@@ -280,7 +318,7 @@ const updateHouse = async(req,res)=>{
 const getHousesForUser = async(req,res)=>{
     try {
     const houses = await House.find({ isShow: true }) // only valid houses
-      .select("horooId horooName horooAddress area city state ownerPrice horooPrice mainImage availableFor houseType") 
+      .select("horooId slug horooName horooAddress area city state ownerPrice horooPrice priceSuffix mainImage availableFor houseType averageRating totalRatings ownerWhatsapp latitude longitude") 
       .populate("state", "name") 
       .populate("city", "name")  
       .populate("area", "name"); 
@@ -294,10 +332,14 @@ const getHousesForUser = async(req,res)=>{
 
 const getHouseDetailForUser = async(req,res)=>{
    try {
-    const { id } = req.params;
-    const house = await House.findOne({ horooId: id })
+    const { slug } = req.params;
+    
+    // Try to find by slug first, if not found try horooId (for backward compatibility)
+    let house = await House.findOne({ slug: slug })
       .select([
+        "_id",
         "horooId",
+        "slug",
         "horooName",
         "state",
         "city",
@@ -319,13 +361,67 @@ const getHouseDetailForUser = async(req,res)=>{
         "otherImages",
         "youtubeLink",
         "description",
+        "averageRating",
+        "totalRatings",
+        "reviews",
       ])
       .populate("state", "name") 
       .populate("city", "name")
       .populate("area", "name");
 
+    // If not found by slug, try horooId (backward compatibility)
+    if (!house) {
+      house = await House.findOne({ horooId: slug })
+        .select([
+          "_id",
+          "horooId",
+          "slug",
+          "horooName",
+          "state",
+          "city",
+          "area",
+          "pincode",
+          "nearbyAreas",
+          "mapLink",
+          "horooAddress",
+          "facilities",
+          "ownerPrice",
+          "horooPrice",
+          "pricePlans",
+          "availableFor",
+          "houseSize",
+          "houseType",
+          "availability",
+          "isVerified",
+          "mainImage",
+          "otherImages",
+          "youtubeLink",
+          "description",
+          "averageRating",
+          "totalRatings",
+          "reviews",
+        ])
+        .populate("state", "name") 
+        .populate("city", "name")
+        .populate("area", "name");
+    }
+
     if (!house) {
       return res.status(404).json({ success: false, message: "House not found" });
+    }
+
+    // Populate reviews separately with error handling
+    if (house && house.reviews && house.reviews.length > 0) {
+      try {
+        await house.populate({
+          path: "reviews",
+          match: { isActive: true, isApproved: true },
+          populate: { path: "user", select: "name profilePicture" },
+          options: { sort: { createdAt: -1 } }
+        });
+      } catch (reviewError) {
+        console.error('Error populating reviews:', reviewError);
+      }
     }
 
     res.json({ success: true, house });
@@ -465,4 +561,42 @@ const getFilteredHousesForUser = async (req, res) => {
   }
 };
 
-export { addHouse, getAllHouses, houseForAdmin, houseForAdminByHorooId, updateHouse, getHousesForUser, getHouseDetailForUser, getFilteredHouses, getFilteredHousesForUser };
+// Migration function to generate slugs for existing houses
+const generateSlugsForExistingHouses = async (req, res) => {
+    try {
+        const houses = await House.find({ $or: [{ slug: null }, { slug: '' }] });
+        
+        let updated = 0;
+        let failed = 0;
+        
+        for (const house of houses) {
+            try {
+                const baseSlug = generateSlug(house.horooName || house.horooId);
+                const slug = await generateUniqueSlug(baseSlug);
+                
+                house.slug = slug;
+                await house.save();
+                updated++;
+            } catch (error) {
+                console.error(`Failed to update slug for house ${house.horooId}:`, error);
+                failed++;
+            }
+        }
+        
+        res.status(200).json({
+            success: true,
+            message: `Slug migration completed. Updated: ${updated}, Failed: ${failed}`,
+            updated,
+            failed
+        });
+    } catch (error) {
+        console.error('Error in slug migration:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error generating slugs',
+            error: error.message
+        });
+    }
+};
+
+export { addHouse, getAllHouses, houseForAdmin, houseForAdminByHorooId, updateHouse, getHousesForUser, getHouseDetailForUser, getFilteredHouses, getFilteredHousesForUser, generateSlugsForExistingHouses };

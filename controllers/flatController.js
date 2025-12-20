@@ -4,6 +4,30 @@ import City from '../models/City.js';
 import Area from '../models/Area.js';
 import { uploadBase64ToCloudinary } from '../config/cloudinaryConfig.js';
 
+// Generate slug from horooName
+const generateSlug = (horooName) => {
+    return horooName
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '') // Remove special characters
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/-+/g, '-'); // Replace multiple hyphens with single hyphen
+};
+
+// Generate unique slug
+const generateUniqueSlug = async (horooName) => {
+    let slug = generateSlug(horooName);
+    let counter = 1;
+    
+    // Check if slug exists
+    while (await Flat.findOne({ slug })) {
+        slug = `${generateSlug(horooName)}-${counter}`;
+        counter++;
+    }
+    
+    return slug;
+};
+
 // Generate unique Horoo ID for flats
 const generateHorooId = async () => {
     try {
@@ -36,6 +60,7 @@ const addFlat = async (req, res) => {
             horooName,
             ownerName,
             ownerMobile,
+            ownerWhatsapp,
             anotherNo,
             
             // Location
@@ -45,6 +70,8 @@ const addFlat = async (req, res) => {
             pincode,
             nearbyAreas,
             mapLink,
+            latitude,
+            longitude,
             realAddress,
             horooAddress,
             
@@ -52,6 +79,7 @@ const addFlat = async (req, res) => {
             facilities,
             ownerPrice,
             horooPrice,
+            priceSuffix,
             offerType,
             pricePlans,
             flatType,
@@ -108,8 +136,9 @@ const addFlat = async (req, res) => {
             });
         }
 
-        // Generate unique Horoo ID
+        // Generate unique Horoo ID and slug
         const horooId = await generateHorooId();
+        const slug = await generateUniqueSlug(horooName);
 
         // Upload main image to Cloudinary if provided
         let mainImageUrl = null;
@@ -147,12 +176,14 @@ const addFlat = async (req, res) => {
         // Create new flat
         const newFlat = new Flat({
             horooId,
+            slug,
             
             // Basic property details
             propertyName,
             horooName,
             ownerName,
             ownerMobile,
+            ownerWhatsapp,
             anotherNo,
             
             // Location
@@ -162,6 +193,8 @@ const addFlat = async (req, res) => {
             pincode,
             nearbyAreas: nearbyAreas || [],
             mapLink,
+            latitude: latitude ? Number(latitude) : undefined,
+            longitude: longitude ? Number(longitude) : undefined,
             realAddress,
             horooAddress,
             
@@ -169,6 +202,7 @@ const addFlat = async (req, res) => {
             facilities: facilities || [],
             ownerPrice: Number(ownerPrice),
             horooPrice: Number(horooPrice),
+            priceSuffix,
             offerType,
             pricePlans: pricePlans || [],
             flatType: flatType || [],
@@ -282,7 +316,7 @@ const updateFlat = async(req,res)=>{
 const getFlatsForUser = async(req,res)=>{
     try {
     const flats = await Flat.find({ isShow: true }) // only valid flats
-      .select("horooId horooAddress horooName area city state ownerPrice horooPrice mainImage availableFor roomType flatType") 
+      .select("horooId slug horooAddress horooName area city state ownerPrice horooPrice priceSuffix mainImage availableFor roomType flatType averageRating totalRatings ownerWhatsapp latitude longitude") 
       .populate("state", "name") 
       .populate("city", "name")  
       .populate("area", "name"); 
@@ -296,10 +330,14 @@ const getFlatsForUser = async(req,res)=>{
 
 const getFlatDetailForUser = async(req,res)=>{
    try {
-    const { id } = req.params;
-    const flat = await Flat.findOne({ horooId: id })
+    const { slug } = req.params;
+    
+    // Try to find by slug first, if not found try by horooId (for backwards compatibility)
+    let flat = await Flat.findOne({ slug: slug })
       .select([
+        "_id",
         "horooId",
+        "slug",
         "horooName",
         "state",
         "city",
@@ -307,10 +345,13 @@ const getFlatDetailForUser = async(req,res)=>{
         "pincode",
         "nearbyAreas",
         "mapLink",
+        "latitude",
+        "longitude",
         "horooAddress",
         "facilities",
         "ownerPrice",
         "horooPrice",
+        "priceSuffix",
         "pricePlans",
         "availableFor",
         "roomSize",
@@ -322,10 +363,71 @@ const getFlatDetailForUser = async(req,res)=>{
         "otherImages",
         "youtubeLink",
         "description",
+        "ownerWhatsapp",
+        "averageRating",
+        "totalRatings",
+        "reviews"
       ])
       .populate("state", "name") 
       .populate("city", "name")
       .populate("area", "name");
+
+    // If not found by slug, try by horooId (backwards compatibility)
+    if (!flat) {
+      flat = await Flat.findOne({ horooId: slug })
+        .select([
+          "_id",
+          "horooId",
+          "slug",
+          "horooName",
+          "state",
+          "city",
+          "area",
+          "pincode",
+          "nearbyAreas",
+          "mapLink",
+          "latitude",
+          "longitude",
+          "horooAddress",
+          "facilities",
+          "ownerPrice",
+          "horooPrice",
+          "priceSuffix",
+          "pricePlans",
+          "availableFor",
+          "roomSize",
+          "roomType",
+          "flatType",
+          "availability",
+          "isVerified",
+          "mainImage",
+          "otherImages",
+          "youtubeLink",
+          "description",
+          "ownerWhatsapp",
+          "averageRating",
+          "totalRatings",
+          "reviews"
+        ])
+        .populate("state", "name") 
+        .populate("city", "name")
+        .populate("area", "name");
+    }
+    
+    // Populate reviews separately to avoid breaking the page if Review model has issues
+    if (flat && flat.reviews && flat.reviews.length > 0) {
+      try {
+        await flat.populate({
+          path: "reviews",
+          match: { isActive: true, isApproved: true },
+          populate: { path: "user", select: "name profilePicture" },
+          options: { sort: { createdAt: -1 } }
+        });
+      } catch (reviewError) {
+        console.error('Error populating reviews:', reviewError);
+        // Continue without reviews if there's an error
+      }
+    }
 
     if (!flat) {
       return res.status(404).json({ success: false, message: "Flat not found" });
@@ -476,4 +578,60 @@ const getFilteredFlatsForUser = async (req, res) => {
   }
 };
 
-export { addFlat, getAllFlats,flatForAdmin,flatForAdminByHorooId,updateFlat ,getFlatsForUser,getFlatDetailForUser,getFilteredFlats,getFilteredFlatsForUser};
+// Utility function to generate slugs for existing flats (migration)
+const generateSlugsForExistingFlats = async (req, res) => {
+  try {
+    // Find all flats without a slug
+    const flatsWithoutSlug = await Flat.find({ 
+      $or: [
+        { slug: { $exists: false } },
+        { slug: null },
+        { slug: '' }
+      ]
+    });
+
+    if (flatsWithoutSlug.length === 0) {
+      return res.status(200).json({ 
+        success: true, 
+        message: "All flats already have slugs",
+        count: 0
+      });
+    }
+
+    let updatedCount = 0;
+    const errors = [];
+
+    for (const flat of flatsWithoutSlug) {
+      try {
+        const slug = await generateUniqueSlug(flat.horooName);
+        flat.slug = slug;
+        await flat.save();
+        updatedCount++;
+      } catch (error) {
+        errors.push({ 
+          horooId: flat.horooId, 
+          horooName: flat.horooName, 
+          error: error.message 
+        });
+      }
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      message: `Generated slugs for ${updatedCount} flats`,
+      count: updatedCount,
+      total: flatsWithoutSlug.length,
+      errors: errors.length > 0 ? errors : undefined
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Error generating slugs",
+      error: error.message 
+    });
+  }
+};
+
+export { addFlat, getAllFlats,flatForAdmin,flatForAdminByHorooId,updateFlat ,getFlatsForUser,getFlatDetailForUser,getFilteredFlats,getFilteredFlatsForUser,generateSlugsForExistingFlats};

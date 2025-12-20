@@ -4,6 +4,30 @@ import City from '../models/City.js';
 import Area from '../models/Area.js';
 import { uploadBase64ToCloudinary } from '../config/cloudinaryConfig.js';
 
+// Generate slug from horooName
+const generateSlug = (horooName) => {
+    return horooName
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '') // Remove special characters
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/-+/g, '-'); // Replace multiple hyphens with single hyphen
+};
+
+// Generate unique slug
+const generateUniqueSlug = async (horooName) => {
+    let slug = generateSlug(horooName);
+    let counter = 1;
+    
+    // Check if slug exists
+    while (await Commercial.findOne({ slug })) {
+        slug = `${generateSlug(horooName)}-${counter}`;
+        counter++;
+    }
+    
+    return slug;
+};
+
 // Generate unique Horoo ID for commercial properties
 const generateHorooId = async () => {
     try {
@@ -36,6 +60,7 @@ const addCommercial = async (req, res) => {
             horooName,
             ownerName,
             ownerMobile,
+            ownerWhatsapp,
             anotherNo,
             
             // Location
@@ -45,6 +70,8 @@ const addCommercial = async (req, res) => {
             pincode,
             nearbyAreas,
             mapLink,
+            latitude,
+            longitude,
             realAddress,
             horooAddress,
             
@@ -52,6 +79,7 @@ const addCommercial = async (req, res) => {
             facilities,
             ownerPrice,
             horooPrice,
+            priceSuffix,
             offerType,
             pricePlans,
             
@@ -109,6 +137,7 @@ const addCommercial = async (req, res) => {
 
         // Generate unique Horoo ID
         const horooId = await generateHorooId();
+        const slug = await generateUniqueSlug(horooName);
 
         // Upload main image to Cloudinary if provided
         let mainImageUrl = null;
@@ -146,12 +175,14 @@ const addCommercial = async (req, res) => {
         // Create new commercial property
         const newCommercial = new Commercial({
             horooId,
+            slug,
             
             // Basic property details
             propertyName,
             horooName,
             ownerName,
             ownerMobile,
+            ownerWhatsapp,
             anotherNo,
             
             // Location
@@ -161,6 +192,8 @@ const addCommercial = async (req, res) => {
             pincode,
             nearbyAreas: nearbyAreas || [],
             mapLink,
+            latitude: latitude ? Number(latitude) : undefined,
+            longitude: longitude ? Number(longitude) : undefined,
             realAddress,
             horooAddress,
             
@@ -168,6 +201,7 @@ const addCommercial = async (req, res) => {
             facilities: facilities || [],
             ownerPrice: Number(ownerPrice),
             horooPrice: Number(horooPrice),
+            priceSuffix,
             offerType,
             pricePlans: pricePlans || [],
             
@@ -280,7 +314,7 @@ const updateCommercial = async(req,res)=>{
 const getCommercialsForUser = async(req,res)=>{
     try {
     const commercials = await Commercial.find({ isShow: true }) // only valid commercial properties
-      .select("horooId horooAddress horooName area city state ownerPrice horooPrice mainImage availableFor commercialType") 
+      .select("horooId slug horooAddress horooName area city state ownerPrice horooPrice priceSuffix mainImage availableFor commercialType averageRating totalRatings ownerWhatsapp latitude longitude") 
       .populate("state", "name") 
       .populate("city", "name")  
       .populate("area", "name"); 
@@ -294,10 +328,13 @@ const getCommercialsForUser = async(req,res)=>{
 
 const getCommercialDetailForUser = async(req,res)=>{
    try {
-    const { id } = req.params;
-    const commercial = await Commercial.findOne({ horooId: id })
+    const { slug } = req.params;
+    // Try finding by slug first, then by horooId as fallback (for backwards compatibility)
+    let commercial = await Commercial.findOne({ slug })
       .select([
+        "_id",
         "horooId",
+        "slug",
         "horooName",
         "state",
         "city",
@@ -319,10 +356,64 @@ const getCommercialDetailForUser = async(req,res)=>{
         "otherImages",
         "youtubeLink",
         "description",
+        "averageRating",
+        "totalRatings",
+        "reviews"
       ])
       .populate("state", "name") 
       .populate("city", "name")
       .populate("area", "name");
+
+    // Fallback to horooId if slug doesn't match
+    if (!commercial) {
+      commercial = await Commercial.findOne({ horooId: slug })
+        .select([
+          "_id",
+          "horooId",
+          "slug",
+          "horooName",
+          "state",
+          "city",
+          "area",
+          "pincode",
+          "nearbyAreas",
+          "mapLink",
+          "horooAddress",
+          "facilities",
+          "ownerPrice",
+          "horooPrice",
+          "pricePlans",
+          "availableFor",
+          "commercialSize",
+          "commercialType",
+          "availability",
+          "isVerified",
+          "mainImage",
+          "otherImages",
+          "youtubeLink",
+          "description",
+          "averageRating",
+          "totalRatings",
+          "reviews"
+        ])
+        .populate("state", "name") 
+        .populate("city", "name")
+        .populate("area", "name");
+    }
+    
+    // Populate reviews
+    if (commercial && commercial.reviews && commercial.reviews.length > 0) {
+      try {
+        await commercial.populate({
+          path: "reviews",
+          match: { isActive: true, isApproved: true },
+          populate: { path: "user", select: "name profilePicture" },
+          options: { sort: { createdAt: -1 } }
+        });
+      } catch (reviewError) {
+        console.error('Error populating reviews:', reviewError);
+      }
+    }
 
     if (!commercial) {
       return res.status(404).json({ success: false, message: "Commercial Property not found" });
@@ -465,4 +556,36 @@ const getFilteredCommercialsForUser = async (req, res) => {
   }
 };
 
-export { addCommercial, getAllCommercials, commercialForAdmin, commercialForAdminByHorooId, updateCommercial, getCommercialsForUser, getCommercialDetailForUser, getFilteredCommercials, getFilteredCommercialsForUser };
+// Migration function to generate slugs for existing commercials
+const generateSlugsForExistingCommercials = async (req, res) => {
+  try {
+    const commercialsWithoutSlug = await Commercial.find({ 
+      $or: [{ slug: { $exists: false } }, { slug: null }, { slug: '' }]
+    });
+
+    if (commercialsWithoutSlug.length === 0) {
+      return res.status(200).json({ success: true, message: "All commercials already have slugs", count: 0 });
+    }
+
+    let updatedCount = 0;
+    const errors = [];
+
+    for (const commercial of commercialsWithoutSlug) {
+      try {
+        const slug = await generateUniqueSlug(commercial.horooName);
+        commercial.slug = slug;
+        await commercial.save();
+        updatedCount++;
+      } catch (error) {
+        errors.push({ horooId: commercial.horooId, horooName: commercial.horooName, error: error.message });
+      }
+    }
+
+    res.status(200).json({ success: true, message: `Generated slugs for ${updatedCount} commercials`, count: updatedCount, total: commercialsWithoutSlug.length, errors: errors.length > 0 ? errors : undefined });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Error generating slugs", error: error.message });
+  }
+};
+
+export { addCommercial, getAllCommercials, commercialForAdmin, commercialForAdminByHorooId, updateCommercial, getCommercialsForUser, getCommercialDetailForUser, getFilteredCommercials, getFilteredCommercialsForUser, generateSlugsForExistingCommercials };

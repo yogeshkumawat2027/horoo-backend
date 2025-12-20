@@ -4,6 +4,30 @@ import City from '../models/City.js';
 import Area from '../models/Area.js';
 import { uploadBase64ToCloudinary } from '../config/cloudinaryConfig.js';
 
+// Generate slug from name
+const generateSlug = (name) => {
+    return name
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '') // Remove special characters
+        .replace(/\s+/g, '-')      // Replace spaces with hyphens
+        .replace(/-+/g, '-');      // Replace multiple hyphens with single hyphen
+};
+
+// Generate unique slug
+const generateUniqueSlug = async (baseName) => {
+    let slug = generateSlug(baseName);
+    let counter = 1;
+    
+    // Check if slug exists, if yes, append number
+    while (await Hostel.findOne({ slug })) {
+        slug = `${generateSlug(baseName)}-${counter}`;
+        counter++;
+    }
+    
+    return slug;
+};
+
 // Generate unique Horoo ID for hostels
 const generateHorooId = async () => {
     try {
@@ -36,6 +60,7 @@ const addHostel = async (req, res) => {
             horooName,
             ownerName,
             ownerMobile,
+            ownerWhatsapp,
             anotherNo,
             
             // Location
@@ -45,6 +70,8 @@ const addHostel = async (req, res) => {
             pincode,
             nearbyAreas,
             mapLink,
+            latitude,
+            longitude,
             realAddress,
             horooAddress,
             
@@ -52,6 +79,7 @@ const addHostel = async (req, res) => {
             facilities,
             ownerPrice,
             horooPrice,
+            priceSuffix,
             offerType,
             pricePlans,
             
@@ -111,6 +139,9 @@ const addHostel = async (req, res) => {
         // Generate unique Horoo ID
         const horooId = await generateHorooId();
 
+        // Generate unique slug
+        const slug = await generateUniqueSlug(horooName || propertyName);
+
         // Upload main image to Cloudinary if provided
         let mainImageUrl = null;
         if (mainImage) {
@@ -147,12 +178,14 @@ const addHostel = async (req, res) => {
         // Create new hostel
         const newHostel = new Hostel({
             horooId,
+            slug,
             
             // Basic property details
             propertyName,
             horooName,
             ownerName,
             ownerMobile,
+            ownerWhatsapp,
             anotherNo,
             
             // Location
@@ -162,6 +195,8 @@ const addHostel = async (req, res) => {
             pincode,
             nearbyAreas: nearbyAreas || [],
             mapLink,
+            latitude: latitude ? Number(latitude) : undefined,
+            longitude: longitude ? Number(longitude) : undefined,
             realAddress,
             horooAddress,
             
@@ -169,6 +204,7 @@ const addHostel = async (req, res) => {
             facilities: facilities || [],
             ownerPrice: Number(ownerPrice),
             horooPrice: Number(horooPrice),
+            priceSuffix,
             offerType,
             pricePlans: pricePlans || [],
             
@@ -282,7 +318,7 @@ const updateHostel = async(req,res)=>{
 const getHostelsForUser = async(req,res)=>{
     try {
     const hostels = await Hostel.find({ isShow: true }) // only valid hostels
-      .select("horooId horooName horooAddress  area city state ownerPrice horooPrice mainImage availableFor roomType") 
+      .select("horooId slug horooName horooAddress area city state ownerPrice horooPrice priceSuffix mainImage availableFor roomType averageRating totalRatings ownerWhatsapp latitude longitude") 
       .populate("state", "name") 
       .populate("city", "name")  
       .populate("area", "name"); 
@@ -296,10 +332,14 @@ const getHostelsForUser = async(req,res)=>{
 
 const getHostelDetailForUser = async(req,res)=>{
    try {
-    const { id } = req.params;
-    const hostel = await Hostel.findOne({ horooId: id })
+    const { slug } = req.params;
+    
+    // Try to find by slug first, fallback to horooId
+    let hostel = await Hostel.findOne({ slug: slug })
       .select([
+        "_id",
         "horooId",
+        "slug",
         "horooName",
         "state",
         "city",
@@ -322,13 +362,68 @@ const getHostelDetailForUser = async(req,res)=>{
         "youtubeLink",
         "description",
         "messDescription",
+        "averageRating",
+        "totalRatings",
+        "reviews",
       ])
       .populate("state", "name") 
       .populate("city", "name")
       .populate("area", "name");
 
+    // If not found by slug, try horooId
+    if (!hostel) {
+      hostel = await Hostel.findOne({ horooId: slug })
+        .select([
+          "_id",
+          "horooId",
+          "slug",
+          "horooName",
+          "state",
+          "city",
+          "area",
+          "pincode",
+          "nearbyAreas",
+          "mapLink",
+          "horooAddress",
+          "facilities",
+          "ownerPrice",
+          "horooPrice",
+          "pricePlans",
+          "availableFor",
+          "roomSize",
+          "roomType",
+          "availability",
+          "isVerified",
+          "mainImage",
+          "otherImages",
+          "youtubeLink",
+          "description",
+          "messDescription",
+          "averageRating",
+          "totalRatings",
+          "reviews",
+        ])
+        .populate("state", "name") 
+        .populate("city", "name")
+        .populate("area", "name");
+    }
+
     if (!hostel) {
       return res.status(404).json({ success: false, message: "Hostel not found" });
+    }
+
+    // Populate reviews separately with error handling
+    if (hostel && hostel.reviews && hostel.reviews.length > 0) {
+      try {
+        await hostel.populate({
+          path: "reviews",
+          match: { isActive: true, isApproved: true },
+          populate: { path: "user", select: "name profilePicture" },
+          options: { sort: { createdAt: -1 } }
+        });
+      } catch (reviewError) {
+        console.error('Error populating reviews:', reviewError);
+      }
     }
 
     res.json({ success: true, hostel });
@@ -468,4 +563,28 @@ const getFilteredHostelsForUser = async (req, res) => {
   }
 };
 
-export { addHostel, getAllHostels,hostelForAdmin,hostelForAdminByHorooId,updateHostel ,getHostelsForUser,getHostelDetailForUser,getFilteredHostels,getFilteredHostelsForUser};
+// Migration function to generate slugs for existing hostels
+const generateSlugsForExistingHostels = async (req, res) => {
+  try {
+    const hostels = await Hostel.find({ slug: { $exists: false } });
+    
+    let updated = 0;
+    for (const hostel of hostels) {
+      const slug = await generateUniqueSlug(hostel.horooName || hostel.propertyName);
+      hostel.slug = slug;
+      await hostel.save();
+      updated++;
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: `Generated slugs for ${updated} hostels`,
+      updated
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export { addHostel, getAllHostels,hostelForAdmin,hostelForAdminByHorooId,updateHostel ,getHostelsForUser,getHostelDetailForUser,getFilteredHostels,getFilteredHostelsForUser,generateSlugsForExistingHostels};

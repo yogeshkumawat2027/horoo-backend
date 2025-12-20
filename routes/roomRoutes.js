@@ -1,5 +1,5 @@
 import express from 'express';
-import { addRoom,getAllRooms,roomForAdmin,roomForAdminByHorooId,updateRoom,getRoomsForUser,getRoomDeatilForUser,getFilteredRooms,getFilteredRoomsForUser } from '../controllers/roomController.js';
+import { addRoom,getAllRooms,roomForAdmin,roomForAdminByHorooId,updateRoom,getRoomsForUser,getRoomDeatilForUser,getFilteredRooms,getFilteredRoomsForUser,generateSlugsForExistingRooms } from '../controllers/roomController.js';
 
 const router = express.Router();
 
@@ -13,7 +13,10 @@ router.put('/room/edit/:id',updateRoom);
 router.get("/rooms-for-user",getRoomsForUser);
 router.get('/rooms/filter', getFilteredRooms); // Filter rooms with multiple criteria - Admin
 router.get('/rooms/filter-for-user', getFilteredRoomsForUser); // Filter rooms for users - Public
-router.get("/room/:id",getRoomDeatilForUser); //show details of rooms to user
+router.get("/room/:slug",getRoomDeatilForUser); //show details of rooms to user by slug
+
+// Migration route - Generate slugs for existing rooms (call once)
+router.post('/rooms/generate-slugs', generateSlugsForExistingRooms); // Admin utility
 
 
 

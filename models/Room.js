@@ -4,12 +4,14 @@ const roomSchema = new mongoose.Schema(
   {
     // Horoo ID - Auto generated
     horooId: { type: String, unique: true },
+    slug: { type: String, unique: true, sparse: true }, // SEO-friendly URL slug from horooName
     
     // Basic property details
     propertyName: { type: String }, // Real name (not shown to users)
     horooName: { type: String, },   // Name shown on website
     ownerName: { type: String, required: true },
     ownerMobile: { type: String, required: true },
+    ownerWhatsapp: { type: String }, // optional
     anotherNo: { type: String }, // optional
 
     // Location
@@ -19,6 +21,8 @@ const roomSchema = new mongoose.Schema(
     pincode: { type: String },
     nearbyAreas: [{ type: String }], // array of strings
     mapLink: { type: String },
+    latitude: { type: Number },
+    longitude: { type: Number },
     realAddress: { type: String },
     horooAddress: { type: String }, // address shown to users
 
@@ -26,6 +30,7 @@ const roomSchema = new mongoose.Schema(
     facilities: [{ type: String }], // array of facilities
     ownerPrice: { type: Number, required: true },
     horooPrice: { type: Number },
+    priceSuffix: { type: String, enum: ["per month", "per day", "per night", "per hour"] },
     offerType: { type: String }, // e.g. discount, special, festival
     pricePlans: [
       {
@@ -50,6 +55,11 @@ const roomSchema = new mongoose.Schema(
     // Descriptions
     description: { type: String }, // shown to users (editor content)
     horooDescription: { type: String }, // internal use (customer support)
+
+    // Reviews and Ratings
+    reviews: [{ type: mongoose.Schema.Types.ObjectId, ref: "Review" }],
+    averageRating: { type: Number, default: 3.5, min: 0, max: 5 },
+    totalRatings: { type: Number, default: 0 },
 
     
   },

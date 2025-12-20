@@ -10,6 +10,7 @@ const messSchema = new mongoose.Schema(
     horooName: { type: String, required: true },   // Name shown on website
     ownerName: { type: String, required: true },
     ownerMobile: { type: String, required: true },
+    ownerWhatsapp: { type: String }, // optional
     anotherNo: { type: String }, // optional
 
     // Location
@@ -19,6 +20,8 @@ const messSchema = new mongoose.Schema(
     pincode: { type: String, required: true },
     nearbyAreas: [{ type: String }], // array of strings
     mapLink: { type: String },
+    latitude: { type: Number },
+    longitude: { type: Number },
     realAddress: { type: String },
     horooAddress: { type: String }, // address shown to users
 
@@ -26,6 +29,7 @@ const messSchema = new mongoose.Schema(
     facilities: [{ type: String }], // array of facilities
     ownerPrice: { type: Number, required: true },
     horooPrice: { type: Number, required: true },
+    priceSuffix: { type: String, enum: ["per month", "per day", "per night", "per hour"] },
     offerType: { type: String }, // e.g. discount, special, festival
     pricePlans: [
       {
@@ -51,6 +55,9 @@ const messSchema = new mongoose.Schema(
     description: { type: String }, // shown to users (editor content)
     
     horooDescription: { type: String }, // internal use (customer support)
+
+    // Reviews
+    reviews: [{ type: mongoose.Schema.Types.ObjectId, ref: "Review" }],
 
     
   },

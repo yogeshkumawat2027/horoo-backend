@@ -3,7 +3,31 @@ import State from '../models/State.js';
 import City from '../models/City.js';
 import Area from '../models/Area.js';
 import { uploadBase64ToCloudinary } from '../config/cloudinaryConfig.js';
-import redis from '../config/redis.js';
+// import redis from '../config/redis.js';
+
+// Generate slug from horooName
+const generateSlug = (horooName) => {
+    return horooName
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '') // Remove special characters
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/-+/g, '-'); // Replace multiple hyphens with single hyphen
+};
+
+// Generate unique slug
+const generateUniqueSlug = async (horooName) => {
+    let slug = generateSlug(horooName);
+    let counter = 1;
+    
+    // Check if slug exists
+    while (await Room.findOne({ slug })) {
+        slug = `${generateSlug(horooName)}-${counter}`;
+        counter++;
+    }
+    
+    return slug;
+};
 
 // Generate unique Horoo ID
 const generateHorooId = async () => {
@@ -37,6 +61,7 @@ const addRoom = async (req, res) => {
             horooName,
             ownerName,
             ownerMobile,
+            ownerWhatsapp,
             anotherNo,
             
             // Location
@@ -46,6 +71,8 @@ const addRoom = async (req, res) => {
             pincode,
             nearbyAreas,
             mapLink,
+            latitude,
+            longitude,
             realAddress,
             horooAddress,
             
@@ -53,6 +80,7 @@ const addRoom = async (req, res) => {
             facilities,
             ownerPrice,
             horooPrice,
+            priceSuffix,
             offerType,
             pricePlans,
             
@@ -108,8 +136,9 @@ const addRoom = async (req, res) => {
             });
         }
 
-        // Generate unique Horoo ID
+        // Generate unique Horoo ID and slug
         const horooId = await generateHorooId();
+        const slug = await generateUniqueSlug(horooName || propertyName || 'room');
 
         // Upload main image to Cloudinary if provided
         let mainImageUrl = null;
@@ -147,12 +176,14 @@ const addRoom = async (req, res) => {
         // Create new room
         const newRoom = new Room({
             horooId,
+            slug,
             
             // Basic property details
             propertyName: propertyName || `Room ${horooId}`,
             horooName: horooName || propertyName || `Room ${horooId}`,
             ownerName,
             ownerMobile,
+            ownerWhatsapp,
             anotherNo,
             
             // Location
@@ -162,6 +193,8 @@ const addRoom = async (req, res) => {
             pincode,
             nearbyAreas: nearbyAreas || [],
             mapLink,
+            latitude: latitude ? Number(latitude) : undefined,
+            longitude: longitude ? Number(longitude) : undefined,
             realAddress,
             horooAddress,
             
@@ -169,6 +202,7 @@ const addRoom = async (req, res) => {
             facilities: facilities || [],
             ownerPrice: Number(ownerPrice),
             horooPrice: Number(horooPrice || ownerPrice),
+            priceSuffix,
             offerType,
             pricePlans: pricePlans || [],
             
@@ -289,26 +323,26 @@ const updateRoom = async(req,res)=>{
 }
 const getRoomsForUser = async(req,res)=>{
     try {
-    const cacheKey = 'all_rooms_user';
+    // const cacheKey = 'all_rooms_user';
     
-    // Check Redis first
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      return res.status(200).json({ success: true, rooms: cached, source: 'cache' });
-    }
+    // // Check Redis first
+    // const cached = await redis.get(cacheKey);
+    // if (cached) {
+    //   return res.status(200).json({ success: true, rooms: cached, source: 'cache' });
+    // }
 
     // Fetch from DB
     const rooms = await Room.find({ isShow: true })
-      .select("horooId horooName horooAddress area city state ownerPrice horooPrice mainImage availableFor roomType") 
+      .select("horooId slug horooName horooAddress area city state ownerPrice horooPrice priceSuffix mainImage availableFor roomType averageRating totalRatings ownerWhatsapp latitude longitude") 
       .populate("state", "name") 
       .populate("city", "name")  
-      .populate("area", "name")
-      .lean(); // Convert to plain objects
+      .populate("area", "name");
+      // .lean(); // Convert to plain objects
 
-    // Store in Redis for 10 minutes
-    await redis.set(cacheKey, rooms, { ex: 600 });
+    // // Store in Redis for 10 minutes
+    // await redis.set(cacheKey, rooms, { ex: 600 });
 
-    res.status(200).json({ success: true, rooms, source: 'database' });
+    res.status(200).json({ success: true, rooms });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Server error" });
@@ -317,19 +351,21 @@ const getRoomsForUser = async(req,res)=>{
 
 const getRoomDeatilForUser = async(req,res)=>{
    try {
-    const { id } = req.params;
-    const cacheKey = `room_detail:${id}`;
+    const { slug } = req.params;
+    // const cacheKey = `room_detail:${slug}`;
     
-    // Check Redis first
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      return res.status(200).json({ success: true, room: cached, source: 'cache' });
-    }
+    // // Check Redis first
+    // const cached = await redis.get(cacheKey);
+    // if (cached) {
+    //   return res.status(200).json({ success: true, room: cached, source: 'cache' });
+    // }
 
-    // Fetch from DB
-    const room = await Room.findOne({ horooId: id })
+    // Try to find by slug first
+    let room = await Room.findOne({ slug: slug })
       .select([
+        "_id",
         "horooId",
+        "slug",
         "horooName",
         "state",
         "city",
@@ -337,10 +373,13 @@ const getRoomDeatilForUser = async(req,res)=>{
         "pincode",
         "nearbyAreas",
         "mapLink",
+        "latitude",
+        "longitude",
         "horooAddress",
         "facilities",
         "ownerPrice",
         "horooPrice",
+        "priceSuffix",
         "pricePlans",
         "availableFor",
         "roomSize",
@@ -351,20 +390,77 @@ const getRoomDeatilForUser = async(req,res)=>{
         "otherImages",
         "youtubeLink",
         "description",
+        "ownerWhatsapp",
+        "averageRating",
+        "totalRatings",
+        "reviews"
       ])
       .populate("state", "name") 
       .populate("city", "name")
-      .populate("area", "name")
-      .lean();
+      .populate("area", "name");
+
+    // If not found by slug, try by horooId (backwards compatibility)
+    if (!room) {
+      room = await Room.findOne({ horooId: slug })
+        .select([
+          "_id",
+          "horooId",
+          "slug",
+          "horooName",
+          "state",
+          "city",
+          "area",
+          "pincode",
+          "nearbyAreas",
+          "mapLink",
+          "latitude",
+          "longitude",
+          "horooAddress",
+          "facilities",
+          "ownerPrice",
+          "horooPrice",
+          "priceSuffix",
+          "pricePlans",
+          "availableFor",
+          "roomSize",
+          "roomType",
+          "availability",
+          "isVerified",
+          "mainImage",
+          "otherImages",
+          "youtubeLink",
+          "description",
+          "averageRating",
+          "totalRatings",
+          "reviews"
+        ])
+        .populate("state", "name") 
+        .populate("city", "name")
+        .populate("area", "name");
+    }
+    
+    // Populate reviews separately to avoid breaking the page
+    if (room && room.reviews && room.reviews.length > 0) {
+      try {
+        await room.populate({
+          path: "reviews",
+          match: { isActive: true, isApproved: true },
+          populate: { path: "user", select: "name profilePicture" },
+          options: { sort: { createdAt: -1 } }
+        });
+      } catch (reviewError) {
+        console.error('Error populating reviews:', reviewError);
+      }
+    }
 
     if (!room) {
       return res.status(404).json({ success: false, message: "Room not found" });
     }
 
-    // Store in Redis for 15 minutes
-    await redis.set(cacheKey, room, { ex: 900 });
+    // // Store in Redis for 15 minutes
+    // await redis.set(cacheKey, room, { ex: 900 });
 
-    res.json({ success: true, room, source: 'database' });
+    res.json({ success: true, room });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Server Error" });
@@ -451,19 +547,19 @@ const getFilteredRoomsForUser = async (req, res) => {
       search
     } = req.query;
 
-    // Create unique cache key based on filters
-    const cacheKey = `filtered:${state||'x'}:${city||'x'}:${area||'x'}:${roomType||'x'}:${availableFor||'x'}:${search||'x'}`;
+    // // Create unique cache key based on filters
+    // const cacheKey = `filtered:${state||'x'}:${city||'x'}:${area||'x'}:${roomType||'x'}:${availableFor||'x'}:${search||'x'}`;
     
-    // Check Redis first
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      return res.status(200).json({
-        success: true,
-        rooms: cached,
-        total: cached.length,
-        source: 'cache'
-      });
-    }
+    // // Check Redis first
+    // const cached = await redis.get(cacheKey);
+    // if (cached) {
+    //   return res.status(200).json({
+    //     success: true,
+    //     rooms: cached,
+    //     total: cached.length,
+    //     source: 'cache'
+    //   });
+    // }
 
     // Build filter object with user restrictions
     let filter = {
@@ -498,19 +594,17 @@ const getFilteredRoomsForUser = async (req, res) => {
       .populate('city', 'name') 
       .populate('area', 'name')
       .select('-ownerMobile -anotherNo -ownerName -horooDescription -isVerified -isShow -realAddress')
-      .sort({ createdAt: -1 })
-      .lean();
+      .sort({ createdAt: -1 });
 
     const total = rooms.length;
 
-    // Store in Redis for 5 minutes (shorter for filtered results)
-    await redis.set(cacheKey, rooms, { ex: 300 });
+    // // Store in Redis for 5 minutes (shorter for filtered results)
+    // await redis.set(cacheKey, rooms, { ex: 300 });
 
     res.status(200).json({
       success: true,
       rooms,
-      total,
-      source: 'database'
+      total
     });
 
   } catch (error) {
@@ -519,4 +613,60 @@ const getFilteredRoomsForUser = async (req, res) => {
   }
 };
 
-export { addRoom, getAllRooms,roomForAdmin,roomForAdminByHorooId,updateRoom ,getRoomsForUser,getRoomDeatilForUser,getFilteredRooms,getFilteredRoomsForUser};
+// Utility function to generate slugs for existing rooms (migration)
+const generateSlugsForExistingRooms = async (req, res) => {
+  try {
+    // Find all rooms without a slug
+    const roomsWithoutSlug = await Room.find({ 
+      $or: [
+        { slug: { $exists: false } },
+        { slug: null },
+        { slug: '' }
+      ]
+    });
+
+    if (roomsWithoutSlug.length === 0) {
+      return res.status(200).json({ 
+        success: true, 
+        message: "All rooms already have slugs",
+        count: 0
+      });
+    }
+
+    let updatedCount = 0;
+    const errors = [];
+
+    for (const room of roomsWithoutSlug) {
+      try {
+        const slug = await generateUniqueSlug(room.horooName || room.propertyName || 'room');
+        room.slug = slug;
+        await room.save();
+        updatedCount++;
+      } catch (error) {
+        errors.push({ 
+          horooId: room.horooId, 
+          horooName: room.horooName, 
+          error: error.message 
+        });
+      }
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      message: `Generated slugs for ${updatedCount} rooms`,
+      count: updatedCount,
+      total: roomsWithoutSlug.length,
+      errors: errors.length > 0 ? errors : undefined
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Error generating slugs",
+      error: error.message 
+    });
+  }
+};
+
+export { addRoom, getAllRooms,roomForAdmin,roomForAdminByHorooId,updateRoom ,getRoomsForUser,getRoomDeatilForUser,getFilteredRooms,getFilteredRoomsForUser,generateSlugsForExistingRooms};
