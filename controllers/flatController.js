@@ -339,6 +339,7 @@ const getFlatDetailForUser = async(req,res)=>{
         "horooId",
         "slug",
         "horooName",
+        "propertyName",
         "state",
         "city",
         "area",
@@ -363,6 +364,7 @@ const getFlatDetailForUser = async(req,res)=>{
         "otherImages",
         "youtubeLink",
         "description",
+        "ownerMobile",
         "ownerWhatsapp",
         "averageRating",
         "totalRatings",
@@ -380,6 +382,7 @@ const getFlatDetailForUser = async(req,res)=>{
           "horooId",
           "slug",
           "horooName",
+          "propertyName",
           "state",
           "city",
           "area",
@@ -404,6 +407,7 @@ const getFlatDetailForUser = async(req,res)=>{
           "otherImages",
           "youtubeLink",
           "description",
+          "ownerMobile",
           "ownerWhatsapp",
           "averageRating",
           "totalRatings",
@@ -634,4 +638,24 @@ const generateSlugsForExistingFlats = async (req, res) => {
   }
 };
 
-export { addFlat, getAllFlats,flatForAdmin,flatForAdminByHorooId,updateFlat ,getFlatsForUser,getFlatDetailForUser,getFilteredFlats,getFilteredFlatsForUser,generateSlugsForExistingFlats};
+// Delete all flats
+const deleteAllFlats = async (req, res) => {
+  try {
+    const result = await Flat.deleteMany({});
+    
+    res.status(200).json({ 
+      success: true, 
+      message: `Successfully deleted ${result.deletedCount} flats`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('Error deleting all flats:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Error deleting flats",
+      error: error.message 
+    });
+  }
+};
+
+export { addFlat, getAllFlats,flatForAdmin,flatForAdminByHorooId,updateFlat ,getFlatsForUser,getFlatDetailForUser,getFilteredFlats,getFilteredFlatsForUser,generateSlugsForExistingFlats,deleteAllFlats};

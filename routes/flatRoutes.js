@@ -1,5 +1,5 @@
 import express from 'express';
-import { addFlat,getAllFlats,flatForAdmin,flatForAdminByHorooId,updateFlat,getFlatsForUser,getFlatDetailForUser,getFilteredFlats,getFilteredFlatsForUser,generateSlugsForExistingFlats } from '../controllers/flatController.js';
+import { addFlat,getAllFlats,flatForAdmin,flatForAdminByHorooId,updateFlat,getFlatsForUser,getFlatDetailForUser,getFilteredFlats,getFilteredFlatsForUser,generateSlugsForExistingFlats,deleteAllFlats } from '../controllers/flatController.js';
 
 const router = express.Router();
 
@@ -18,6 +18,9 @@ router.get("/flat/:slug",getFlatDetailForUser); //show details of flats to user 
 
 // Migration route - Generate slugs for existing flats (call once)
 router.post('/flats/generate-slugs', generateSlugsForExistingFlats); // Admin utility
+
+// DELETE all flats - Use with caution!
+router.delete('/flats/delete-all', deleteAllFlats);
 
 
 export default router;

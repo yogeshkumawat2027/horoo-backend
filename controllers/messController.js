@@ -300,7 +300,9 @@ const getMessDetailForUser = async(req,res)=>{
     const mess = await Mess.findOne({ horooId: id })
       .select([
         "horooId",
+        "propertyName",
         "horooName",
+        "ownerMobile",
         "state",
         "city",
         "area",
@@ -311,6 +313,7 @@ const getMessDetailForUser = async(req,res)=>{
         "facilities",
         "ownerPrice",
         "horooPrice",
+        "priceSuffix",
         "pricePlans",
         "availableFor",
         "availability",
