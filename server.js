@@ -84,16 +84,20 @@ app.use('/api', reviewRoutes);
 
 
 
-const PORT = process.env.PORT || 5000;
-
+// Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
 .then(()=>{
     console.log("Mongodb connected successfully");
 })
 .catch((err)=> console.log(err));
 
-// export default app;
+// Export for Vercel serverless
+export default app;
 
-app.listen(PORT,()=>{
-    console.log("Server is running at port 5000");
-})
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+        console.log(`Server is running at port ${PORT}`);
+    });
+}
