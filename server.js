@@ -85,11 +85,16 @@ app.use('/api', reviewRoutes);
 
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI)
+if (mongoose.connection.readyState === 0) {
+
+        mongoose.connect(process.env.MONGODB_URI)
 .then(()=>{
     console.log("Mongodb connected successfully");
 })
 .catch((err)=> console.log(err));
+
+}
+
 
 // Export for Vercel serverless
 export default app;
