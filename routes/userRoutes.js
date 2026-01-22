@@ -1,10 +1,7 @@
 import express from 'express';
-import passport from 'passport';
 import {
   registerUser,
   loginUser,
-  googleAuthSuccess,
-  googleAuthFailure,
   completeProfile,
   requestPasswordReset,
   verifyOTP,
@@ -26,21 +23,6 @@ router.post('/login', loginUser);
 router.post('/forgot-password', requestPasswordReset);
 router.post('/verify-otp', verifyOTP);
 router.post('/reset-password', resetPassword);
-
-// Google OAuth Routes
-router.get('/auth/google',
-  passport.authenticate('google', { scope: ['profile', 'email'] })
-);
-
-router.get('/auth/google/callback',
-  passport.authenticate('google', { 
-    failureRedirect: '/api/user/auth/google/failure',
-    session: false 
-  }),
-  googleAuthSuccess
-);
-
-router.get('/auth/google/failure', googleAuthFailure);
 
 // Protected User Routes - Profile Management (requires JWT token)
 router.get('/profile/:userId', verifyUserToken, getUserProfile);
