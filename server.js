@@ -50,6 +50,44 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 
 
+// MongoDB Connection for Serverless
+let isConnected = false;
+
+const connectDB = async () => {
+  if (isConnected) {
+    console.log('Using existing MongoDB connection');
+    return;
+  }
+
+  try {
+    const db = await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+    
+    isConnected = db.connections[0].readyState === 1;
+    console.log('MongoDB connected successfully');
+  } catch (err) {
+    console.error('MongoDB connection error:', err);
+    throw err;
+  }
+};
+
+// Middleware to ensure DB connection before handling requests
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Database connection failed',
+      error: error.message 
+    });
+  }
+});
+
+
 app.use('/api', locationRoutes);
 app.use('/api', roomRoutes);
 app.use('/api', flatRoutes);
@@ -66,26 +104,20 @@ app.use('/api/user', userRoutes);
 app.use('/api', reviewRoutes);
 
 
-
-// Connect to MongoDB
-if (mongoose.connection.readyState === 0) {
-
-        mongoose.connect(process.env.MONGODB_URI)
-.then(()=>{
-    console.log("Mongodb connected successfully");
-})
-.catch((err)=> console.log(err));
-
-}
-
-
 // Export for Vercel serverless
 export default app;
 
 // For local development
 if (process.env.NODE_ENV !== 'production') {
     const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
-        console.log(`Server is running at port ${PORT}`);
-    });
+    
+    // Connect to MongoDB for local development
+    mongoose.connect(process.env.MONGODB_URI)
+        .then(() => {
+            console.log("MongoDB connected successfully");
+            app.listen(PORT, () => {
+                console.log(`Server is running at port ${PORT}`);
+            });
+        })
+        .catch((err) => console.log("MongoDB connection error:", err));
 }
