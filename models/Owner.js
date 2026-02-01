@@ -111,9 +111,10 @@ const ownerSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for faster queries
-ownerSchema.index({ email: 1 });
-ownerSchema.index({ mobile: 1 });
+// ✅ No need for manual indexes - 'unique: true' already creates them
+// Removed duplicate indexes to fix warnings:
+// - email index (already created by unique: true)
+// - mobile index (already created by unique: true)
 
 const Owner = mongoose.model('Owner', ownerSchema);
 

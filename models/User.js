@@ -75,9 +75,10 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for faster queries
-userSchema.index({ email: 1 });
-userSchema.index({ googleId: 1 });
+// ✅ No need for manual indexes - 'unique: true' already creates them
+// Removed duplicate indexes to fix warnings:
+// - email index (already created by unique: true)
+// - googleId index (already created by unique: true + sparse: true)
 
 const User = mongoose.model('User', userSchema);
 

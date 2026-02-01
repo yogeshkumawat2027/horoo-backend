@@ -55,20 +55,34 @@ let isConnected = false;
 
 const connectDB = async () => {
   if (isConnected) {
-    console.log('Using existing MongoDB connection');
+    console.log(' Using existing MongoDB connection');
     return;
   }
 
   try {
+    // Check if MONGODB_URI exists
+    if (!process.env.MONGODB_URI) {
+      throw new Error(' MONGODB_URI is not defined in .env file');
+    }
+
+    console.log(' Connecting to MongoDB...');
+    
     const db = await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 30000, // Increased to 30 seconds
       socketTimeoutMS: 45000,
+      family: 4, // Use IPv4, skip trying IPv6
     });
     
     isConnected = db.connections[0].readyState === 1;
-    console.log('MongoDB connected successfully');
+    console.log('MongoDB connected successfully!');
+    console.log(' Database:', db.connections[0].name);
   } catch (err) {
-    console.error('MongoDB connection error:', err);
+    console.error(' MongoDB connection error:', err.message);
+    console.error('\n Troubleshooting tips:');
+    console.error('1. Check if your IP is whitelisted in MongoDB Atlas');
+    console.error('2. Verify your connection string in .env file');
+    console.error('3. Check if password contains special characters (needs encoding)');
+    console.error('4. Ensure MongoDB cluster is running (not paused)');
     throw err;
   }
 };
