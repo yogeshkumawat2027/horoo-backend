@@ -2,12 +2,12 @@ import Owner from "../models/Owner.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-// Generate JWT Token (valid for 90 days - 3 months)
+
 const generateToken = (ownerId) => {
   return jwt.sign(
     { ownerId },
     process.env.JWT_SECRET || "horoo_owner_secret_key_2024",
-    { expiresIn: "90d" } // 90 days = 3 months
+    { expiresIn: "90d" } 
   );
 };
 
@@ -33,7 +33,7 @@ export const registerOwner = async (req, res) => {
       });
     }
 
-    // Mobile validation (10 digits)
+  
     const mobileRegex = /^[0-9]{10}$/;
     if (!mobileRegex.test(mobile)) {
       return res.status(400).json({
@@ -42,7 +42,7 @@ export const registerOwner = async (req, res) => {
       });
     }
 
-    // Password strength validation (minimum 6 characters)
+   
     if (password.length < 6) {
       return res.status(400).json({
         success: false,
@@ -50,7 +50,7 @@ export const registerOwner = async (req, res) => {
       });
     }
 
-    // Check if passwords match
+   
     if (password !== confirmPassword) {
       return res.status(400).json({
         success: false,
@@ -58,7 +58,7 @@ export const registerOwner = async (req, res) => {
       });
     }
 
-    // Check if owner already exists with email or mobile
+    
     const existingOwnerEmail = await Owner.findOne({ email });
     if (existingOwnerEmail) {
       return res.status(400).json({

@@ -1,12 +1,13 @@
 import express from 'express'
+import masterAdminMiddleware from '../middlewares/MasterAdmin.js';
 
 import {addArea, addCity, addState, getCitiesByState,getAreasByCities, getState,getCities,getAreas,getLocationDetails} from '../controllers/locationController.js'
 
 const router = express.Router();
 
-router.post('/state',addState);
-router.post("/city", addCity);
-router.post('/area', addArea);
+router.post('/state', masterAdminMiddleware, addState);
+router.post("/city", masterAdminMiddleware, addCity);
+router.post('/area', masterAdminMiddleware, addArea);
 
 router.get("/states",getState);
 router.get("/cities/:id",getCitiesByState);

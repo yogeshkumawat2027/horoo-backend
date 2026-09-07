@@ -1,10 +1,10 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
-// Middleware to verify user JWT token
+
 export const verifyUserToken = async (req, res, next) => {
   try {
-    // Get token from header
+    
     const token = req.headers.authorization?.split(" ")[1]; // Bearer TOKEN
 
     if (!token) {
@@ -14,13 +14,13 @@ export const verifyUserToken = async (req, res, next) => {
       });
     }
 
-    // Verify token
+    
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET || "horoo_user_secret_key_2024"
     );
 
-    // Find user
+   
     const user = await User.findById(decoded.userId).select("-password -otp -otpExpiry");
 
     if (!user) {

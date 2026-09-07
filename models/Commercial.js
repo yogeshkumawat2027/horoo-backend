@@ -61,7 +61,6 @@ const commercialSchema = new mongoose.Schema(
     averageRating: { type: Number, default: 3.5, min: 0, max: 5 },
     totalRatings: { type: Number, default: 0 },
 
-    
   },
   { timestamps: true }
 );

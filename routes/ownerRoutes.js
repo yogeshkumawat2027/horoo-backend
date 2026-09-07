@@ -15,11 +15,11 @@ import { verifyOwnerToken, isVerifiedOwner } from '../middlewares/ownerAuth.js';
 
 const router = express.Router();
 
-// Public Routes - Authentication
+
 router.post('/register', registerOwner);
 router.post('/login', loginOwner);
 
-// Public Routes - Password Reset
+
 router.post('/forgot-password', requestPasswordReset);
 router.post('/verify-otp', verifyOTP);
 router.post('/reset-password', resetPassword);

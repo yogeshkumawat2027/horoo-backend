@@ -19,7 +19,7 @@ const generateUniqueSlug = async (horooName) => {
     let slug = generateSlug(horooName);
     let counter = 1;
     
-    // Check if slug exists
+   
     while (await Flat.findOne({ slug })) {
         slug = `${generateSlug(horooName)}-${counter}`;
         counter++;

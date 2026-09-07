@@ -16,3 +16,7 @@ const citySchema = new mongoose.Schema({
 );
 
 export default mongoose.model('City' , citySchema );
+
+
+
+
