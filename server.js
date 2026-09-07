@@ -29,6 +29,8 @@ app.use(cors({
     "https://horoo.in",
     "https://admin.horoo.in",
     "https://www.horoo.in",
+    "https://horoo-client.vercel.app",
+    "https://horoo-admin.vercel.app",
     "http://horoo.in",
     "http://www.horoo.in"
   ],
