@@ -15,7 +15,6 @@ import commercialRoutes from './routes/commercialRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import requestRoutes from "./routes/requestRoutes.js";
 import listingRequestRoutes from "./routes/listingRequestRoutes.js";
-import ownerRoutes from './routes/ownerRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 
@@ -113,7 +112,6 @@ app.use('/api', commercialRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/requests',requestRoutes);
 app.use('/api/listing-requests',listingRequestRoutes);
-app.use('/api/owner', ownerRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api', reviewRoutes);
 
